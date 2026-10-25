@@ -901,7 +901,7 @@ elif page == "Machine Detail":
                 <div style="font-size:20px; font-weight:700; color:{C_INK}; margin-bottom:2px;">
                     {rul_h:.1f} hours
                 </div>
-                <div style="font-size:10px; color:{C_MUTED};">≈ {day_label} · {interp}</div>
+                <div style="font-size:10px; color:{C_MUTED};">≈ {day_label} &middot; {interp}</div>
             </div>
             """, unsafe_allow_html=True)
 
