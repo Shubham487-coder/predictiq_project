@@ -880,30 +880,19 @@ elif page == "Machine Detail":
         alert_tag = '<span style="font-size:10px; background:rgba(255,59,78,0.2); color:#ff3b4e; border-radius:4px; padding:1px 6px; margin-left:4px;">⚠ ALERT</span>' if alert else ""
 
         with cols[i]:
-            st.markdown(f"""
-            <div class="metric-card" style="border-color:{c}55; box-shadow:0 0 20px {c}22;">
-                <div style="font-size:13px; font-weight:850; color:{c};
-                            letter-spacing:0.04em; margin-bottom:4px;">
-                    {comp_name}{alert_tag}
-                </div>
-                <div style="font-size:10px; color:{C_MUTED}; margin-bottom:10px;">{cstatus}</div>
-
-                <div style="font-size:10px; color:{C_MUTED}; margin-bottom:2px;">Failure Probability</div>
-                <div style="font-size:24px; font-weight:800; color:{c};
-                            text-shadow:0 0 16px {c}55; margin-bottom:2px;">
-                    {prob*100:.1f}%
-                </div>
-                <div style="font-size:10px; color:{C_MUTED}; margin-bottom:10px;">
-                    Chance this part fails soon
-                </div>
-
-                <div style="font-size:10px; color:{C_MUTED}; margin-bottom:2px;">Remaining Useful Life</div>
-                <div style="font-size:20px; font-weight:700; color:{C_INK}; margin-bottom:2px;">
-                    {rul_h:.1f} hours
-                </div>
-                <div style="font-size:10px; color:{C_MUTED};">≈ {day_label} &middot; {interp}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            card_html = (
+                f'<div class="metric-card" style="border-color:{c}55; box-shadow:0 0 20px {c}22;">'
+                f'<div style="font-size:13px; font-weight:850; color:{c}; letter-spacing:0.04em; margin-bottom:4px;">{comp_name}{alert_tag}</div>'
+                f'<div style="font-size:10px; color:{C_MUTED}; margin-bottom:10px;">{cstatus}</div>'
+                f'<div style="font-size:10px; color:{C_MUTED}; margin-bottom:2px;">Failure Probability</div>'
+                f'<div style="font-size:24px; font-weight:800; color:{c}; text-shadow:0 0 16px {c}55; margin-bottom:2px;">{prob*100:.1f}%</div>'
+                f'<div style="font-size:10px; color:{C_MUTED}; margin-bottom:10px;">Chance this part fails soon</div>'
+                f'<div style="font-size:10px; color:{C_MUTED}; margin-bottom:2px;">Remaining Useful Life</div>'
+                f'<div style="font-size:20px; font-weight:700; color:{C_INK}; margin-bottom:2px;">{rul_h:.1f} hours</div>'
+                f'<div style="font-size:10px; color:{C_MUTED};">&asymp; {day_label} &middot; {interp}</div>'
+                f'</div>'
+            )
+            st.markdown(card_html, unsafe_allow_html=True)
 
     col_l, col_r = st.columns(2)
 
