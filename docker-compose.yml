@@ -1,0 +1,225 @@
+# ============================================================
+# PredictIQ — Production Docker Compose
+# ============================================================
+# Services:
+#   postgres   — Shared database (predictiq_db + airflow_db)
+#   api        — FastAPI inference service (XGBoost + PyTorch)
+#   scheduler  — Airflow scheduler (hourly pipeline)
+#   webserver  — Airflow UI (port 8080)
+#   dashboard  — Streamlit dashboard (port 8501)
+#
+# Usage:
+#   docker compose up -d               # start everything
+#   docker compose logs -f api         # tail API logs
+#   docker compose restart scheduler   # restart one service
+#   docker compose down -v             # stop + remove volumes
+# ============================================================
+
+
+
+# ── Reusable fragments ─────────────────────────────────────────
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: docker/airflow/Dockerfile
+  env_file: .env
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+    PYTHONPATH: /opt/airflow
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+    AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+    POSTGRES_HOST: ${POSTGRES_HOST}
+    POSTGRES_PORT: ${POSTGRES_PORT}
+    POSTGRES_USER: ${POSTGRES_USER}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  volumes:
+    - airflow_logs:/opt/airflow/logs
+    - ./data:/opt/airflow/data
+  depends_on:
+    postgres:
+      condition: service_healthy
+  restart: unless-stopped
+  networks:
+    - predictiq_net
+
+# ── Networks ───────────────────────────────────────────────────
+networks:
+  predictiq_net:
+    driver: bridge
+    name: predictiq_network
+
+# ── Named volumes ──────────────────────────────────────────────
+volumes:
+  postgres_data:
+    name: predictiq_postgres_data
+  airflow_logs:
+    name: predictiq_airflow_logs
+
+
+# ── Services ───────────────────────────────────────────────────
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: predictiq_postgres
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres           # default db, init.sql creates the rest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d predictiq_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - predictiq_net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── FastAPI Inference Service ──────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: predictiq_api
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      LOG_LEVEL: info
+    volumes:
+      # Mount raw data so feature engineering can read CSVs
+      - ./data:/app/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - |
+          curl -sf http://localhost:8000/api/v1/health \
+          | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get('data',{}).get('models_loaded') else 1)"
+      interval: 20s
+      timeout: 15s
+      retries: 10
+      start_period: 120s        # PyTorch + XGBoost load takes ~30-60s
+    restart: unless-stopped
+    networks:
+      - predictiq_net
+    deploy:
+      resources:
+        limits:
+          memory: 4G             # PyTorch + 4 XGBoost models + inference buffers
+
+  # ── Airflow Scheduler (pipeline runner) ───────────────────
+  scheduler:
+    <<: *airflow-common
+    container_name: predictiq_scheduler
+    environment:
+      AIRFLOW_ROLE: scheduler
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      PYTHONPATH: /opt/airflow
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$(hostname)\""]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # ── Airflow Webserver (UI) ────────────────────────────────
+  webserver:
+    <<: *airflow-common
+    container_name: predictiq_webserver
+    environment:
+      AIRFLOW_ROLE: webserver
+      PYTHONPATH: /opt/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8081:8080"
+    depends_on:
+      scheduler:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ── Streamlit Dashboard ───────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard/Dockerfile
+    container_name: predictiq_dashboard
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      API_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8501/_stcore/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - predictiq_net
+    deploy:
+      resources:
+        limits:
+          memory: 512M

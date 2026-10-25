@@ -1,0 +1,14 @@
+kaggle
+pandas
+numpy
+matplotlib
+seaborn
+jupyter
+pyarrow
+xgboost
+mlflow
+scikit-learn
+imbalanced-learn
+lightgbm
+optuna
+torch

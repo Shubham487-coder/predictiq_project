@@ -1,0 +1,67 @@
+# ── Version control ───────────────────────────────────────────
+.git
+.gitignore
+
+# ── Python artifacts ──────────────────────────────────────────
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.eggs
+dist/
+build/
+.venv/
+venv/
+env/
+*.egg
+
+# ── Dev / test ────────────────────────────────────────────────
+.pytest_cache
+.coverage
+.mypy_cache
+.ruff_cache
+htmlcov/
+*.log
+
+# ── Notebooks ─────────────────────────────────────────────────
+notebooks/
+*.ipynb
+
+# ── Large model training artefacts ───────────────────────────
+# Keep: xgb_comp*_24h.json (classifiers)
+# Keep: rul_model_multihead_v2.pt and rul_norm_params.npz
+# Exclude: all other .pt files (30+ MB each, not used at runtime)
+ml_models/rul_regression/rul_model_comp*.pt
+ml_models/rul_regression/rul_model_multihead.pt
+ml_models/rul_regression/*.png
+ml_models/rul_regression/*.log
+ml_models/failure_classification/*.png
+ml_models/failure_classification/best_model.json
+ml_models/failure_classification/xgb_comp2_48h.json
+ml_models/failure_classification/train*.py
+ml_models/failure_classification/improve*.py
+ml_models/validation/
+ml_models/rul_regression/train*.py
+!ml_models/rul_regression/train_rul_multihead_v2.py
+ml_models/rul_regression/save_norm*.py
+ml_models/rul_regression/evaluate*.py
+
+# ── Raw data (too large to bake into image) ───────────────────
+data/
+
+# ── Docker files themselves (no need inside image) ────────────
+
+docker-compose.yml
+Dockerfile
+
+# ── Docs and misc ─────────────────────────────────────────────
+*.md
+LICENSE
+.env
+.env.*
+!.env.example
+
+# ── OS ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

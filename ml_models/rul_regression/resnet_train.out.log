@@ -1,0 +1,17 @@
+Starting RUL ResNet training
+Loading raw data
+Building telemetry timestep features
+Building RUL labels
+RUL row counts by component:
+comp1: 18337
+comp2: 25623
+comp3: 12759
+comp4: 17627
+Building sequences
+X shape: (25336, 48, 9)
+y shape: (25336,)
+RUL distribution: min=1.00, max=100.00, mean=50.29, median=50.00
+Train size: 16608
+Test size: 8728
+epoch=1, train_loss=3248.237712, val_loss=3035.991532, lr=0.000100
+epoch=5, train_loss=984.653114, val_loss=562.714791, lr=0.001000
