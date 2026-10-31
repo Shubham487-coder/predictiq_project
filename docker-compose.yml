@@ -4,8 +4,8 @@
 # Services:
 #   postgres   — Shared database (predictiq_db + airflow_db)
 #   api        — FastAPI inference service (XGBoost + PyTorch)
-#   scheduler  — Airflow scheduler (hourly pipeline)
-#   webserver  — Airflow UI (port 8080)
+#   scheduler  — Airflow scheduler (weekly pipeline)
+#   webserver  — Airflow UI (port 8081)
 #   dashboard  — Streamlit dashboard (port 8501)
 #
 # Usage:
@@ -40,6 +40,7 @@ x-airflow-common: &airflow-common
   volumes:
     - airflow_logs:/opt/airflow/logs
     - ./data:/opt/airflow/data
+    - ./dags:/opt/airflow/dags
   depends_on:
     postgres:
       condition: service_healthy
