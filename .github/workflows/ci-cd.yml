@@ -49,4 +49,4 @@ jobs:
           script: |
             cd ~/predictiq
             git pull origin main
-            docker compose restart scheduler webserver api dashboard
+            docker compose up -d --build dashboard && docker compose restart scheduler webserver api

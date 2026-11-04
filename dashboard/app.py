@@ -674,7 +674,7 @@ if page == "Overview":
     kpi_descs = [
         ("Total Machines", n_total,   "metric-neutral",  "Total number of engines being monitored."),
         ("🔴 Critical",    n_critical,"metric-critical", STATUS_DESC["CRITICAL"]),
-        ("🟡 Monitor",     n_monitor, "metric-warning",  STATUS_DESC["WARNING"]),
+        ("🟡 WARNING",     n_monitor, "metric-warning",  STATUS_DESC["WARNING"]),
         ("🟢 Healthy",     n_healthy, "metric-healthy",  STATUS_DESC["HEALTHY"]),
     ]
     for col, (label, val, cls, desc) in zip([c1,c2,c3,c4], kpi_descs):
@@ -1020,7 +1020,7 @@ elif page == "Alerts":
     with c2:
         st.markdown(f"""
         <div class="metric-card" style="border-color:rgba(255,176,32,0.35);">
-            <div class="metric-label">🟡 Monitor Engines</div>
+            <div class="metric-label">🟡 Warning Engines</div>
             <div class="metric-value metric-warning">{n_warning}</div>
             <div style="font-size:11px; color:{C_MUTED}; margin-top:8px;">{STATUS_DESC["WARNING"]}</div>
         </div>""", unsafe_allow_html=True)
