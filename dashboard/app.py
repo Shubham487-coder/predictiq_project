@@ -183,7 +183,7 @@ footer { display: none; }
     color: var(--red);
     box-shadow: 0 0 12px rgba(255,59,78,0.25);
 }
-.badge-monitor {
+.badge-warning {
     border: 1px solid rgba(255,192,32,0.60);
     background: rgba(255,192,32,0.14);
     color: var(--amber);
@@ -293,12 +293,12 @@ C_PANEL  = "#090e1a"
 
 STATUS_COLOR = {
     "CRITICAL": C_RED,
-    "MONITOR":  C_AMBER,
+    "WARNING":  C_AMBER,
     "HEALTHY":  C_GREEN,
 }
 STATUS_BADGE = {
     "CRITICAL": "badge-critical",
-    "MONITOR":  "badge-monitor",
+    "WARNING":  "badge-monitor",
     "HEALTHY":  "badge-healthy",
 }
 
@@ -314,7 +314,7 @@ COMP_KEYS = ["comp1", "comp2", "comp3", "comp4"]
 # ── Plain-English status descriptions ─────────────────────────────────────────
 STATUS_DESC = {
     "CRITICAL": "Failure likely within 48 hours — immediate action required",
-    "MONITOR":  "Degradation detected — schedule inspection within 3 days",
+    "WARNING":  "Degradation detected — schedule inspection within 3 days",
     "HEALTHY":  "Operating normally — no action needed",
 }
 
@@ -434,8 +434,8 @@ def random_as_of() -> str:
 
 def dark_table(df: pd.DataFrame, color_fns: dict | None = None) -> None:
     """Render a fully dark-themed HTML table matching the dashboard palette."""
-    STATUS_BG  = {"CRITICAL":"rgba(255,59,78,0.14)","MONITOR":"rgba(255,192,32,0.12)","HEALTHY":"rgba(0,245,160,0.10)"}
-    STATUS_CLR = {"CRITICAL":C_RED,"MONITOR":C_AMBER,"HEALTHY":C_GREEN}
+    STATUS_BG  = {"CRITICAL":"rgba(255,59,78,0.14)","WARNING":"rgba(255,192,32,0.12)","HEALTHY":"rgba(0,245,160,0.10)"}
+    STATUS_CLR = {"CRITICAL":C_RED,"WARNING":C_AMBER,"HEALTHY":C_GREEN}
 
     th_style = (
         f"padding:9px 14px;text-align:left;font-size:11px;font-weight:800;"
@@ -608,7 +608,7 @@ if clf.empty or rul.empty:
 
 status_counts = clf["overall_status"].value_counts().to_dict()
 n_critical = status_counts.get("CRITICAL", 0)
-n_monitor  = status_counts.get("MONITOR",  0)
+n_monitor  = status_counts.get("WARNING",  0)
 n_healthy  = status_counts.get("HEALTHY",  0)
 n_total    = len(clf)
 
@@ -616,7 +616,7 @@ rul_min = rul.groupby("machine_id")["predicted_rul_hours"].min().reset_index()
 rul_min.columns = ["machine_id", "min_rul_hours"]
 clf_rich = clf.merge(rul_min, on="machine_id", how="left")
 
-priority_order = {"CRITICAL": 0, "MONITOR": 1, "HEALTHY": 2}
+priority_order = {"CRITICAL": 0, "WARNING": 1, "HEALTHY": 2}
 clf_rich["_prio"] = clf_rich["overall_status"].map(priority_order)
 clf_rich_sorted = clf_rich.sort_values(["_prio", "min_rul_hours"]).drop(columns="_prio")
 
@@ -657,7 +657,7 @@ if page == "Overview":
 
         <b style="color:{C_CYAN};">What do the statuses mean?</b><br>
         🔴 <b style="color:{C_RED};">CRITICAL</b> — {STATUS_DESC["CRITICAL"]}<br>
-        🟡 <b style="color:{C_AMBER};">MONITOR</b> — {STATUS_DESC["MONITOR"]}<br>
+        🟡 <b style="color:{C_AMBER};">WARNING</b> — {STATUS_DESC["MONITOR"]}<br>
         🟢 <b style="color:{C_GREEN};">HEALTHY</b> — {STATUS_DESC["HEALTHY"]}<br><br>
 
         <b style="color:{C_CYAN};">What is RUL?</b><br>
@@ -674,7 +674,7 @@ if page == "Overview":
     kpi_descs = [
         ("Total Machines", n_total,   "metric-neutral",  "Total number of engines being monitored."),
         ("🔴 Critical",    n_critical,"metric-critical", STATUS_DESC["CRITICAL"]),
-        ("🟡 Monitor",     n_monitor, "metric-warning",  STATUS_DESC["MONITOR"]),
+        ("🟡 Monitor",     n_monitor, "metric-warning",  STATUS_DESC["WARNING"]),
         ("🟢 Healthy",     n_healthy, "metric-healthy",  STATUS_DESC["HEALTHY"]),
     ]
     for col, (label, val, cls, desc) in zip([c1,c2,c3,c4], kpi_descs):
@@ -696,12 +696,12 @@ if page == "Overview":
             f"""This pie chart shows the <b>current health split</b> across all {n_total} machines in the fleet.<br><br>
             Each machine is classified into one of three categories based on its sensor readings and failure predictions:<br><br>
             🔴 <b style="color:{C_RED};">CRITICAL</b> — The model has detected that one or more components on this machine are highly likely to fail very soon (within ~48 hours). These machines need <b>immediate attention</b>.<br><br>
-            🟡 <b style="color:{C_AMBER};">MONITOR</b> — The model has detected early signs of degradation. The machine is not in immediate danger but should be <b>inspected within the next 3 days</b> to prevent escalation.<br><br>
+            🟡 <b style="color:{C_AMBER};">WARNING</b> — The model has detected early signs of degradation. The machine is not in immediate danger but should be <b>inspected within the next 3 days</b> to prevent escalation.<br><br>
             🟢 <b style="color:{C_GREEN};">HEALTHY</b> — All components on this machine are operating normally. <b>No action required</b> at this time.<br><br>
             <b>How to use this:</b> If the red slice is growing over multiple runs, your fleet health is deteriorating and you may need to increase maintenance frequency."""
         )
         fig_pie = go.Figure(go.Pie(
-            labels=["CRITICAL","MONITOR","HEALTHY"],
+            labels=["CRITICAL","WARNING","HEALTHY"],
             values=[n_critical, n_monitor, n_healthy],
             marker_colors=[C_RED, C_AMBER, C_GREEN],
             hole=0.58,
@@ -747,7 +747,7 @@ if page == "Overview":
         f"""This table lists the <b>10 machines that need attention most urgently</b>, sorted so the most critical machines appear at the top.<br><br>
         <b>Column explanations:</b><br><br>
         📌 <b>Machine</b> — The unique ID of the engine (e.g. M032 = Machine 32)<br><br>
-        🚦 <b>Status</b> — The overall health of this machine. CRITICAL means act now, MONITOR means watch closely, HEALTHY means all good.<br><br>
+        🚦 <b>Status</b> — The overall health of this machine. CRITICAL means act now, WARNING means watch closely, HEALTHY means all good.<br><br>
         🔢 <b>Priority (1=urgent)</b> — A ranking from 1 to 4. Priority 1 means this machine should be fixed <i>before all others</i>. Priority 4 means it can wait.<br><br>
         ⏱ <b>Min RUL (hours)</b> — The shortest Remaining Useful Life across all 4 components on this machine. This is how many hours you have before the most degraded component needs maintenance. <span style="color:{C_RED};">Red = under 48h</span>, <span style="color:{C_AMBER};">Amber = under 72h</span>.<br><br>
         📊 <b>Fan / Core Engine / HP Turbine / LP Turbine Fail %</b> — The failure probability (0–100%) for each individual component. 100% means the model is certain this component will fail very soon. 0% means it's healthy.<br><br>
@@ -766,7 +766,7 @@ if page == "Overview":
         f"Fan Fail %", f"Core Engine Fail %", f"HP Turbine Fail %", f"LP Turbine Fail %"
     ]
 
-    STATUS_BG = {"CRITICAL":"rgba(255,59,78,0.14)","MONITOR":"rgba(255,192,32,0.12)","HEALTHY":"rgba(0,245,160,0.10)"}
+    STATUS_BG = {"CRITICAL":"rgba(255,59,78,0.14)","WARNING":"rgba(255,192,32,0.12)","HEALTHY":"rgba(0,245,160,0.10)"}
     def _top10_fns(col):
         if col == "Status":
             return lambda v: (f"background:{STATUS_BG.get(v,'')};color:{STATUS_COLOR.get(v,C_INK)};"
@@ -1006,7 +1006,7 @@ elif page == "Alerts":
         2️⃣ Check the <b>Remaining Life (hours)</b> column to understand your deadline<br>
         3️⃣ Use the <b>Machine Detail</b> page (sidebar) to drill deeper into that specific machine<br>
         4️⃣ Schedule maintenance or replacement for that component before the RUL runs out<br><br>
-        <b>Filters:</b> Use the filters below to focus on specific machine statuses or component types. By default, only CRITICAL and MONITOR machines are shown."""
+        <b>Filters:</b> Use the filters below to focus on specific machine statuses or component types. By default, only CRITICAL and WARNING machines are shown."""
     )
 
     c1, c2 = st.columns(2)
@@ -1021,16 +1021,16 @@ elif page == "Alerts":
         st.markdown(f"""
         <div class="metric-card" style="border-color:rgba(255,176,32,0.35);">
             <div class="metric-label">🟡 Monitor Engines</div>
-            <div class="metric-value metric-warning">{n_monitor}</div>
-            <div style="font-size:11px; color:{C_MUTED}; margin-top:8px;">{STATUS_DESC["MONITOR"]}</div>
+            <div class="metric-value metric-warning">{n_warning}</div>
+            <div style="font-size:11px; color:{C_MUTED}; margin-top:8px;">{STATUS_DESC["WARNING"]}</div>
         </div>""", unsafe_allow_html=True)
 
     st.markdown('<div class="section-title">Filter Alerts</div>', unsafe_allow_html=True)
     cf1, cf2 = st.columns(2)
     with cf1:
         status_filter = st.multiselect(
-            "Engine Status", ["CRITICAL","MONITOR","HEALTHY"],
-            default=["CRITICAL","MONITOR"],
+            "Engine Status", ["CRITICAL","WARNING","HEALTHY"],
+            default=["CRITICAL","WARNING"],
             help="Filter by the overall engine status"
         )
     with cf2:
@@ -1074,7 +1074,7 @@ elif page == "Alerts":
     else:
         alerts_df = pd.DataFrame(alert_rows).sort_values(["Repair Priority","Remaining Life (h)"])
 
-        STATUS_BG2 = {"CRITICAL":"rgba(255,59,78,0.14)","MONITOR":"rgba(255,192,32,0.12)","HEALTHY":"rgba(0,245,160,0.10)"}
+        STATUS_BG2 = {"CRITICAL":"rgba(255,59,78,0.14)","WARNING":"rgba(255,192,32,0.12)","HEALTHY":"rgba(0,245,160,0.10)"}
         def _alert_fns(col):
             if col in ("Engine Status","Component Status"):
                 return lambda v: (f"background:{STATUS_BG2.get(v,'')};color:{STATUS_COLOR.get(v,C_INK)};font-weight:800;")
@@ -1103,7 +1103,7 @@ elif page == "Alerts":
         🟡 <b>Top-right</b> — High failure probability but more time remaining: <b>plan maintenance soon</b><br>
         🟡 <b>Bottom-left</b> — Low remaining life but lower failure probability: <b>watch closely</b><br>
         🟢 <b>Bottom-right</b> — Low failure probability AND plenty of life remaining: <b>safe zone</b><br><br>
-        <b>Dot colours:</b> 🔴 CRITICAL &nbsp;|&nbsp; 🟡 MONITOR &nbsp;|&nbsp; 🟢 HEALTHY<br><br>
+        <b>Dot colours:</b> 🔴 CRITICAL &nbsp;|&nbsp; 🟡 WARNING &nbsp;|&nbsp; 🟢 HEALTHY<br><br>
         <b>How to use this:</b> Hover over any dot to see the machine ID and priority. Any dot in the top-left quadrant (above the 50% line and left of the 72h line) should already appear in the alert table above."""
     )
     sdf = clf_rich.copy()
