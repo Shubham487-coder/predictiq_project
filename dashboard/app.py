@@ -657,7 +657,7 @@ if page == "Overview":
 
         <b style="color:{C_CYAN};">What do the statuses mean?</b><br>
         🔴 <b style="color:{C_RED};">CRITICAL</b> — {STATUS_DESC["CRITICAL"]}<br>
-        🟡 <b style="color:{C_AMBER};">WARNING</b> — {STATUS_DESC["MONITOR"]}<br>
+        🟡 <b style="color:{C_AMBER};">WARNING</b> — {STATUS_DESC["WARNING"]}<br>
         🟢 <b style="color:{C_GREEN};">HEALTHY</b> — {STATUS_DESC["HEALTHY"]}<br><br>
 
         <b style="color:{C_CYAN};">What is RUL?</b><br>
