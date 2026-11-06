@@ -612,7 +612,7 @@ if clf.empty or rul.empty:
 
 status_counts = clf["overall_status"].value_counts().to_dict()
 n_critical = status_counts.get("CRITICAL", 0)
-n_monitor  = status_counts.get("WARNING",  0)
+n_warning  = status_counts.get("WARNING",  0)
 n_healthy  = status_counts.get("HEALTHY",  0)
 n_total    = len(clf)
 
