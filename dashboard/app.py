@@ -276,6 +276,10 @@ hr { border-color: var(--soft-line); }
     border-radius: 8px;
     color: var(--green);
 }
+@keyframes pulse-ff3b4e {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,78,0); }
+    50% { box-shadow: 0 0 24px 6px rgba(255,59,78,0.35); }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -669,22 +673,29 @@ if page == "Overview":
         </div>
         """, unsafe_allow_html=True)
 
-    # KPI row
-    c1, c2, c3, c4 = st.columns(4)
-    kpi_descs = [
-        ("Total Machines", n_total,   "metric-neutral",  "Total number of engines being monitored."),
-        ("🔴 Critical",    n_critical,"metric-critical", STATUS_DESC["CRITICAL"]),
-        ("🟡 WARNING",     n_monitor, "metric-warning",  STATUS_DESC["WARNING"]),
-        ("🟢 Healthy",     n_healthy, "metric-healthy",  STATUS_DESC["HEALTHY"]),
-    ]
-    for col, (label, val, cls, desc) in zip([c1,c2,c3,c4], kpi_descs):
+    # KPI row — 3 cards only
+    c1, c2, c3 = st.columns(3)
+
+    def stat_card(col, label, val, color, desc, pulse=False):
+        pct = round((val / n_total) * 100, 1) if n_total else 0
+        pulse_css = f"animation: pulse-{color.replace('#','')} 2s infinite;" if pulse and val > 0 else ""
         with col:
             st.markdown(f"""
-            <div class="metric-card">
+            <div class="metric-card" style="position:relative; overflow:hidden; {pulse_css}">
                 <div class="metric-label">{label}</div>
-                <div class="metric-value {cls}">{val}</div>
-                <div style="font-size:11px; color:{C_MUTED}; margin-top:8px; line-height:1.4;">{desc}</div>
+                <div class="metric-value" style="color:{color}; font-size:42px; font-weight:900;
+                     margin:6px 0 2px; line-height:1;">{val}</div>
+                <div style="font-size:11px; color:{C_MUTED}; margin-bottom:10px;">of {n_total} machines</div>
+                <div style="background:{C_LINE}; border-radius:4px; height:5px; width:100%; margin-bottom:8px;">
+                    <div style="background:{color}; border-radius:4px; height:5px;
+                         width:{pct}%; opacity:0.85; transition:width 0.6s ease;"></div>
+                </div>
+                <div style="font-size:11px; color:{C_MUTED}; line-height:1.4;">{desc}</div>
             </div>""", unsafe_allow_html=True)
+
+    stat_card(c1, "🔴 CRITICAL", n_critical, C_RED,    STATUS_DESC["CRITICAL"], pulse=True)
+    stat_card(c2, "🟡 WARNING",  n_warning,  C_AMBER,  STATUS_DESC["WARNING"])
+    stat_card(c3, "🟢 HEALTHY",  n_healthy,  C_GREEN,  STATUS_DESC["HEALTHY"])
 
     # Charts row
     col_left, col_right = st.columns([1, 2])
