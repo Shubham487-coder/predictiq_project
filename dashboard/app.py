@@ -652,24 +652,19 @@ if page == "Overview":
     """, unsafe_allow_html=True)
 
     # How to read this dashboard
-    with st.expander("ℹ️  How to read this dashboard"):
+    with st.expander("ℹ️  How to read these cards"):
         st.markdown(f"""
         <div style="font-size:13px; color:{C_INK}; line-height:1.8;">
-        <b style="color:{C_CYAN};">What is this?</b><br>
-        PredictIQ monitors a fleet of turbofan engines and predicts which components are likely to fail —
-        before they actually fail. This gives engineers time to schedule maintenance and avoid unplanned breakdowns.<br><br>
-
-        <b style="color:{C_CYAN};">What do the statuses mean?</b><br>
-        🔴 <b style="color:{C_RED};">CRITICAL</b> — {STATUS_DESC["CRITICAL"]}<br>
-        🟡 <b style="color:{C_AMBER};">WARNING</b> — {STATUS_DESC["WARNING"]}<br>
-        🟢 <b style="color:{C_GREEN};">HEALTHY</b> — {STATUS_DESC["HEALTHY"]}<br><br>
-
-        <b style="color:{C_CYAN};">What is RUL?</b><br>
-        RUL stands for <b>Remaining Useful Life</b> — how many hours the component is predicted to last
-        before it needs maintenance. A low RUL means act soon.<br><br>
-
-        <b style="color:{C_CYAN};">What are the components?</b><br>
-        Each engine has 4 monitored parts: <b>Fan</b>, <b>Core Engine</b>, <b>HP Turbine</b> (High-Pressure), and <b>LP Turbine</b> (Low-Pressure).
+        Each card shows how many of the 100 engines currently fall into that health category,
+        based on the latest pipeline run.<br><br>
+        🔴 <b style="color:{C_RED};">CRITICAL</b> — One or more components on this engine are
+        predicted to fail very soon. Fix these first.<br><br>
+        🟡 <b style="color:{C_AMBER};">WARNING</b> — Early signs of degradation detected.
+        Not urgent, but schedule an inspection this week.<br><br>
+        🟢 <b style="color:{C_GREEN};">HEALTHY</b> — All components are operating normally.
+        No action needed.<br><br>
+        The bar under each number shows that count as a share of all 100 engines.
+        A wider red bar means more machines need immediate attention.
         </div>
         """, unsafe_allow_html=True)
 
@@ -713,7 +708,7 @@ if page == "Overview":
         )
         fig_pie = go.Figure(go.Pie(
             labels=["CRITICAL","WARNING","HEALTHY"],
-            values=[n_critical, n_monitor, n_healthy],
+            values=[n_critical, n_warning, n_healthy],
             marker_colors=[C_RED, C_AMBER, C_GREEN],
             hole=0.58,
             textinfo="percent",
