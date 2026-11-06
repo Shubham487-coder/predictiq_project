@@ -592,7 +592,7 @@ def render_sidebar():
         load_latest_run.clear()
         st.rerun()
 
-
+render_sidebar()
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 clf, rul, run_at = load_latest_run()
