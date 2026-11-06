@@ -511,7 +511,7 @@ def render_sidebar():
     </div>
     """, unsafe_allow_html=True)
 
-    page = st.radio(
+    st.session_state.page = st.radio(
         "nav",
         ["Overview", "Machine Detail", "Alerts"],
         label_visibility="collapsed",
@@ -591,7 +591,6 @@ def render_sidebar():
     if st.button("🔄 Refresh"):
         load_latest_run.clear()
         st.rerun()
-        render_sidebar()
 
 
 # ── Load data ─────────────────────────────────────────────────────────────────
@@ -631,6 +630,8 @@ clf_rich_sorted = clf_rich.sort_values(["_prio", "min_rul_hours"]).drop(columns=
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE 1 — OVERVIEW
 # ═══════════════════════════════════════════════════════════════════════════════
+
+page = st.session_state.get("page", "Overview")
 
 if page == "Overview":
     run_at_str = run_at.strftime("%Y-%m-%d %H:%M UTC") if run_at else "—"
