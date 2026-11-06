@@ -280,6 +280,68 @@ hr { border-color: var(--soft-line); }
     0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,78,0); }
     50% { box-shadow: 0 0 24px 6px rgba(255,59,78,0.35); }
 }
+@keyframes pulse-amber {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,192,32,0); }
+    50% { box-shadow: 0 0 16px 4px rgba(255,192,32,0.30); }
+}
+.fault-row {
+    background: rgba(10,19,32,0.72);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+}
+.fault-row-header {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8faac8;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.machine-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.machine-tag {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    min-width: 56px;
+    cursor: default;
+    transition: transform 0.15s;
+}
+.machine-tag:hover { transform: translateY(-2px); }
+.machine-tag.critical {
+    background: rgba(255,59,78,0.10);
+    border: 1px solid rgba(255,59,78,0.55);
+    animation: pulse-ff3b4e 2s infinite;
+}
+.machine-tag.warning {
+    background: rgba(255,192,32,0.08);
+    border: 1px solid rgba(255,192,32,0.45);
+    animation: pulse-amber 3s infinite;
+}
+.machine-tag .tag-id {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+.machine-tag.critical .tag-id { color: #ff3b4e; }
+.machine-tag.warning  .tag-id { color: #ffc020; }
+.allclear {
+    font-size: 12px;
+    color: #3a7a5a;
+    font-weight: 700;
+    padding: 6px 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -728,27 +790,139 @@ if page == "Overview":
         st.plotly_chart(fig_pie, use_container_width=True)
 
     with col_right:
-        st.markdown('<div class="section-title">Average Failure Probability by Component</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Component Fault Panel</div>', unsafe_allow_html=True)
         info_box(
-            "What does this chart show?",
-            f"""This bar chart shows the <b>average failure probability per component</b>, calculated across all {n_total} machines.<br><br>
-            Each machine has 4 monitored components: <b>Fan, Core Engine, HP Turbine,</b> and <b>LP Turbine</b>. For each component, our ML model produces a failure probability between 0% and 100%.<br><br>
-            This chart averages that probability across all machines to show you <b>which type of component is most at risk fleet-wide</b>.<br><br>
-            <b>Colour guide:</b><br>
-            🔴 <b style="color:{C_RED};">Red bar</b> — Above 50%: this component type is failing frequently across the fleet<br>
-            🟡 <b style="color:{C_AMBER};">Amber bar</b> — Between 30–50%: early warning, worth monitoring closely<br>
-            🟢 <b style="color:{C_GREEN};">Green bar</b> — Below 30%: this component type is generally healthy<br><br>
-            <b>How to use this:</b> If one component type consistently shows high failure rates, it may indicate a systemic issue — a batch of faulty parts, a common operating condition causing wear, or a maintenance gap for that component type."""
+            "What does this panel show?",
+            f"""This panel shows which machines are currently flagging each component as degraded.<br><br>
+            Each tag represents one machine — <b style="color:{C_RED};">🔴 red tags</b> need immediate action,
+            <b style="color:{C_AMBER};">🟡 amber tags</b> should be inspected soon.<br><br>
+            A machine appearing in multiple rows has more than one component affected — prioritise those first.<br><br>
+            Machines running normally are not shown. If a row shows <span style="color:#3a7a5a;">✓ All clear</span>,
+            no machine in the fleet is flagging that component right now."""
         )
-        comp_probs = {COMP_NAMES[c]: clf[f"{c}_prob"].mean() for c in COMP_KEYS}
-        bar_colors = [C_RED if v>0.5 else C_AMBER if v>0.3 else C_GREEN for v in comp_probs.values()]
-        fig_bar = plotly_bar(
-            [v*100 for v in comp_probs.values()],
-            list(comp_probs.keys()),
-            bar_colors,
-            yaxis_title="Avg Failure Probability (%)",
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
+
+        COMP_SVG = {
+            "comp1": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="fan-g" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="{c1}"/>
+                  <stop offset="100%" stop-color="{c2}"/>
+                </radialGradient>
+              </defs>
+              <circle cx="20" cy="20" r="18" fill="url(#fan-g)" opacity="0.15"/>
+              <circle cx="20" cy="20" r="4" fill="{c1}" opacity="0.9"/>
+              <path d="M20,16 C22,10 28,8 26,14 C24,18 22,19 20,20 Z" fill="{c1}" opacity="0.85"/>
+              <path d="M24,22 C30,20 32,26 26,26 C22,26 20,24 20,20 Z" fill="{c1}" opacity="0.70"/>
+              <path d="M18,24 C16,30 10,30 12,24 C14,20 17,19 20,20 Z" fill="{c1}" opacity="0.55"/>
+              <path d="M16,18 C10,16 10,10 16,13 C19,15 20,18 20,20 Z" fill="{c1}" opacity="0.70"/>
+              <circle cx="20" cy="20" r="3" fill="{c1}"/>
+            </svg>""",
+            "comp2": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="eng-g" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="{c1}"/>
+                  <stop offset="100%" stop-color="{c2}"/>
+                </linearGradient>
+              </defs>
+              <rect x="6" y="14" width="28" height="12" rx="6" fill="url(#eng-g)" opacity="0.20"/>
+              <rect x="6" y="14" width="28" height="12" rx="6" fill="none" stroke="{c1}" stroke-width="1.2" opacity="0.7"/>
+              <ellipse cx="34" cy="20" rx="4" ry="6" fill="{c1}" opacity="0.25"/>
+              <ellipse cx="34" cy="20" rx="4" ry="6" fill="none" stroke="{c1}" stroke-width="1" opacity="0.6"/>
+              <ellipse cx="6" cy="20" rx="3" ry="5" fill="{c1}" opacity="0.15"/>
+              <line x1="12" y1="17" x2="12" y2="23" stroke="{c1}" stroke-width="1" opacity="0.5"/>
+              <line x1="18" y1="15" x2="18" y2="25" stroke="{c1}" stroke-width="1" opacity="0.5"/>
+              <line x1="24" y1="15" x2="24" y2="25" stroke="{c1}" stroke-width="1" opacity="0.5"/>
+              <line x1="30" y1="17" x2="30" y2="23" stroke="{c1}" stroke-width="1" opacity="0.5"/>
+            </svg>""",
+            "comp3": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="hpt-g" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="{c1}" stop-opacity="0.9"/>
+                  <stop offset="100%" stop-color="{c2}" stop-opacity="0.3"/>
+                </radialGradient>
+              </defs>
+              <circle cx="20" cy="20" r="16" fill="url(#hpt-g)" opacity="0.15"/>
+              <circle cx="20" cy="20" r="16" fill="none" stroke="{c1}" stroke-width="1" opacity="0.4"/>
+              <circle cx="20" cy="20" r="5" fill="{c1}" opacity="0.8"/>
+              <circle cx="20" cy="20" r="5" fill="none" stroke="{c1}" stroke-width="0.5" opacity="0.5"/>
+              <path d="M20,15 L22,8 L20,10 L18,8 Z" fill="{c1}" opacity="0.8"/>
+              <path d="M25,20 L32,18 L30,20 L32,22 Z" fill="{c1}" opacity="0.8"/>
+              <path d="M20,25 L22,32 L20,30 L18,32 Z" fill="{c1}" opacity="0.8"/>
+              <path d="M15,20 L8,18 L10,20 L8,22 Z" fill="{c1}" opacity="0.8"/>
+              <path d="M23,13 L28,8 L27,11 L30,10 Z" fill="{c1}" opacity="0.6"/>
+              <path d="M27,23 L32,28 L29,27 L30,30 Z" fill="{c1}" opacity="0.6"/>
+              <path d="M17,27 L12,32 L13,29 L10,30 Z" fill="{c1}" opacity="0.6"/>
+              <path d="M13,17 L8,12 L11,13 L10,10 Z" fill="{c1}" opacity="0.6"/>
+            </svg>""",
+            "comp4": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="lpt-g" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="{c1}" stop-opacity="0.8"/>
+                  <stop offset="100%" stop-color="{c2}" stop-opacity="0.2"/>
+                </radialGradient>
+              </defs>
+              <circle cx="20" cy="20" r="18" fill="url(#lpt-g)" opacity="0.12"/>
+              <circle cx="20" cy="20" r="18" fill="none" stroke="{c1}" stroke-width="0.8" opacity="0.35"/>
+              <circle cx="20" cy="20" r="10" fill="none" stroke="{c1}" stroke-width="0.8" opacity="0.25"/>
+              <circle cx="20" cy="20" r="4" fill="{c1}" opacity="0.7"/>
+              <path d="M20,16 L21,6 L20,9 L19,6 Z" fill="{c1}" opacity="0.75"/>
+              <path d="M24,20 L34,19 L31,20 L34,21 Z" fill="{c1}" opacity="0.75"/>
+              <path d="M20,24 L21,34 L20,31 L19,34 Z" fill="{c1}" opacity="0.75"/>
+              <path d="M16,20 L6,19 L9,20 L6,21 Z" fill="{c1}" opacity="0.75"/>
+              <path d="M22,14 L26,5 L25,9 L28,7 Z" fill="{c1}" opacity="0.55"/>
+              <path d="M26,22 L35,26 L31,24 L33,27 Z" fill="{c1}" opacity="0.55"/>
+              <path d="M18,26 L14,35 L15,31 L12,33 Z" fill="{c1}" opacity="0.55"/>
+              <path d="M14,18 L5,14 L9,16 L7,13 Z" fill="{c1}" opacity="0.55"/>
+            </svg>""",
+        }
+
+        COMP_LABEL = {
+            "comp1": "Fan",
+            "comp2": "Core Engine",
+            "comp3": "HP Turbine",
+            "comp4": "LP Turbine",
+        }
+
+
+        def make_tag(machine_id, severity, comp_key):
+            c1 = "#ff3b4e" if severity == "CRITICAL" else "#ffc020"
+            c2 = "#7a0010" if severity == "CRITICAL" else "#7a5500"
+            css_class = "critical" if severity == "CRITICAL" else "warning"
+            svg = COMP_SVG[comp_key].replace("{c1}", c1).replace("{c2}", c2)
+            return f"""<div class="machine-tag {css_class}">
+                {svg}
+                <div class="tag-id">M{str(machine_id).zfill(3)}</div>
+            </div>"""
+
+
+        rows_html = ""
+        for comp_key in COMP_KEYS:
+            label = COMP_LABEL[comp_key]
+            flagging = clf[clf[f"{comp_key}_status"] != "HEALTHY"][["machine_id", f"{comp_key}_status"]].copy()
+            flagging = flagging.sort_values(f"{comp_key}_status", key=lambda s: s.map({"CRITICAL": 0, "WARNING": 1}))
+            n_flag = len(flagging)
+            count_str = f"{n_flag} flagging" if n_flag > 0 else "All clear"
+            count_color = C_RED if any(
+                flagging[f"{comp_key}_status"] == "CRITICAL") else C_AMBER if n_flag > 0 else "#3a7a5a"
+
+            if n_flag == 0:
+                tags_html = '<div class="allclear">✓ No machines flagging this component</div>'
+            else:
+                tags_html = '<div class="machine-tags">'
+                for _, row in flagging.iterrows():
+                    tags_html += make_tag(row["machine_id"], row[f"{comp_key}_status"], comp_key)
+                tags_html += '</div>'
+
+            rows_html += f"""
+            <div class="fault-row">
+                <div class="fault-row-header">
+                    <span>{label}</span>
+                    <span style="color:{count_color};">{count_str}</span>
+                </div>
+                {tags_html}
+            </div>"""
+
+        st.markdown(rows_html, unsafe_allow_html=True)
 
     # Top 10 table
     st.markdown('<div class="section-title">Top 10 Machines Needing Attention</div>', unsafe_allow_html=True)
