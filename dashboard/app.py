@@ -494,7 +494,6 @@ def plotly_bar(values, labels, colors, yaxis_title="", height=280):
 
 @st.fragment
 def render_sidebar():
-  with st.sidebar:
     st.markdown(f"""
     <div style="padding:6px 0 18px 0; border-bottom:1px solid {C_LINE}; margin-bottom:16px;">
         <div style="display:flex; align-items:center; gap:10px;">
@@ -592,7 +591,8 @@ def render_sidebar():
         load_latest_run.clear()
         st.rerun()
 
-render_sidebar()
+with st.sidebar:
+    render_sidebar()
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 clf, rul, run_at = load_latest_run()
