@@ -492,7 +492,9 @@ def plotly_bar(values, labels, colors, yaxis_title="", height=280):
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 
-with st.sidebar:
+@st.fragment
+def render_sidebar():
+  with st.sidebar:
     st.markdown(f"""
     <div style="padding:6px 0 18px 0; border-bottom:1px solid {C_LINE}; margin-bottom:16px;">
         <div style="display:flex; align-items:center; gap:10px;">
@@ -570,7 +572,7 @@ with st.sidebar:
     with col1:
         if st.button("🎲 Random"):
             st.session_state.as_of = random_as_of()
-            st.rerun()
+            st.rerun(scope="fragment")
     with col2:
         run_clicked = st.button("▶ Run DAG", disabled=(val_error is not None))
 
@@ -589,6 +591,7 @@ with st.sidebar:
     if st.button("🔄 Refresh"):
         load_latest_run.clear()
         st.rerun()
+        render_sidebar()
 
 
 # ── Load data ─────────────────────────────────────────────────────────────────
