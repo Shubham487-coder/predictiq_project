@@ -692,7 +692,7 @@ if page == "Overview":
                 <div style="font-size:11px; color:{C_MUTED}; line-height:1.4;">{desc}</div>
             </div>""", unsafe_allow_html=True)
 
-    stat_card(c1, "🔴 CRITICAL", n_critical, C_RED,    STATUS_DESC["CRITICAL"])
+    stat_card(c1, "🔴 CRITICAL", n_critical, C_RED,    STATUS_DESC["CRITICAL"], pulse=True)
     stat_card(c2, "🟡 WARNING",  n_warning,  C_AMBER,  STATUS_DESC["WARNING"])
     stat_card(c3, "🟢 HEALTHY",  n_healthy,  C_GREEN,  STATUS_DESC["HEALTHY"])
 
