@@ -292,7 +292,7 @@ hr { border-color: var(--soft-line); }
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    min-height: 90px;
+    min-height: 120px;
 }
 .fault-row-header {
     font-size: 15px;
@@ -906,7 +906,7 @@ if page == "Overview":
                             <div style="flex:1; display:flex; align-items:center;">
                                 {tags_html}
                             </div>
-                            <div style="font-size:12px; font-weight:800; color:{count_color};
+                            <div style="font-size:16px; font-weight:800; color:{count_color};
                                         margin-left:16px; flex-shrink:0; min-width:80px; text-align:right;">
                                 {count_str}
                             </div>
