@@ -290,17 +290,22 @@ hr { border-color: var(--soft-line); }
     border-radius: 10px;
     padding: 14px 18px;
     margin-bottom: 10px;
+    display: flex;
+    align-items: center;
 }
 .fault-row-header {
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #8faac8;
-    margin-bottom: 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 0;
+    min-width: 140px;
+    padding-right: 20px;
+    flex-shrink: 0;
 }
 .machine-tags {
     display: flex;
@@ -330,7 +335,7 @@ hr { border-color: var(--soft-line); }
     animation: pulse-amber 3s infinite;
 }
 .machine-tag .tag-id {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 800;
     letter-spacing: 0.04em;
 }
