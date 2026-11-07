@@ -285,7 +285,7 @@ hr { border-color: var(--soft-line); }
     50% { box-shadow: 0 0 16px 4px rgba(255,192,32,0.30); }
 }
 .fault-row {
-    background: rgba(10,19,32,0.72);
+    background: rgba(10,19,32,0.04);
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 10px;
     padding: 14px 18px;
@@ -890,13 +890,15 @@ if page == "Overview":
             tags_html += '</div>'
 
         rows_html += f"""
-        <div class="fault-row">
-            <div class="fault-row-header">
-                <span>{label}</span>
-                <span style="color:{count_color};">{count_str}</span>
-            </div>
-            {tags_html}
-        </div>"""
+                <div class="fault-row">
+                    <div class="fault-row-header">
+                        <span>{label}</span>
+                        <span style="color:{count_color}; margin-left:18px; font-size:12px;">{count_str}</span>
+                    </div>
+                    <div style="flex:1; display:flex; align-items:center;">
+                        {tags_html}
+                    </div>
+                </div>"""
 
     st.markdown(rows_html, unsafe_allow_html=True)
 
