@@ -880,20 +880,20 @@ if page == "Overview":
 
         if n_flag == 0:
             tags_html = """<div class="machine-tag" style="background:rgba(0,245,160,0.06);
-                            border:1px solid rgba(0,245,160,0.30); animation:none;">
-                            <svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="20" cy="20" r="16" fill="rgba(0,245,160,0.08)"
-                                      stroke="#17d88b" stroke-width="1" opacity="0.5"/>
-                              <circle cx="20" cy="20" r="9" fill="rgba(0,245,160,0.10)"
-                                      stroke="#17d88b" stroke-width="1" opacity="0.6"/>
-                              <circle cx="20" cy="20" r="3" fill="#17d88b" opacity="0.8"/>
-                              <path d="M20,11 L21,5 L20,8 L19,5 Z" fill="#17d88b" opacity="0.6"/>
-                              <path d="M29,20 L35,19 L32,20 L35,21 Z" fill="#17d88b" opacity="0.6"/>
-                              <path d="M20,29 L21,35 L20,32 L19,35 Z" fill="#17d88b" opacity="0.6"/>
-                              <path d="M11,20 L5,19 L8,20 L5,21 Z" fill="#17d88b" opacity="0.6"/>
-                            </svg>
-                            <div class="tag-id" style="color:#17d88b;">All clear</div>
-                        </div>"""
+                                        border:1px solid rgba(0,245,160,0.30); animation:none;
+                                        min-width:56px; padding:8px 10px;">
+                                        <svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+                                          <circle cx="20" cy="20" r="16" fill="rgba(0,245,160,0.08)"
+                                                  stroke="#17d88b" stroke-width="1" opacity="0.5"/>
+                                          <circle cx="20" cy="20" r="9" fill="rgba(0,245,160,0.10)"
+                                                  stroke="#17d88b" stroke-width="1" opacity="0.6"/>
+                                          <circle cx="20" cy="20" r="3" fill="#17d88b" opacity="0.8"/>
+                                          <path d="M20,11 L21,5 L20,8 L19,5 Z" fill="#17d88b" opacity="0.6"/>
+                                          <path d="M29,20 L35,19 L32,20 L35,21 Z" fill="#17d88b" opacity="0.6"/>
+                                          <path d="M20,29 L21,35 L20,32 L19,35 Z" fill="#17d88b" opacity="0.6"/>
+                                          <path d="M11,20 L5,19 L8,20 L5,21 Z" fill="#17d88b" opacity="0.6"/>
+                                        </svg>
+                                    </div>"""
         else:
             tags_html = '<div class="machine-tags">'
             for _, row in flagging.iterrows():
