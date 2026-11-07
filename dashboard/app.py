@@ -299,12 +299,8 @@ hr { border-color: var(--soft-line); }
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #8faac8;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0;
-    min-width: 140px;
-    padding-right: 20px;
+    min-width: 160px;
+    padding-right: 24px;
     flex-shrink: 0;
 }
 .machine-tags {
@@ -890,15 +886,16 @@ if page == "Overview":
             tags_html += '</div>'
 
         rows_html += f"""
-                <div class="fault-row">
-                    <div class="fault-row-header">
-                        <span>{label}</span>
-                        <span style="color:{count_color}; margin-left:18px; font-size:12px;">{count_str}</span>
-                    </div>
-                    <div style="flex:1; display:flex; align-items:center;">
-                        {tags_html}
-                    </div>
-                </div>"""
+                        <div class="fault-row">
+                            <div class="fault-row-header">{label}</div>
+                            <div style="flex:1; display:flex; align-items:center;">
+                                {tags_html}
+                            </div>
+                            <div style="font-size:12px; font-weight:800; color:{count_color};
+                                        margin-left:16px; flex-shrink:0; min-width:80px; text-align:right;">
+                                {count_str}
+                            </div>
+                        </div>"""
 
     st.markdown(rows_html, unsafe_allow_html=True)
 
