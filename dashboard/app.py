@@ -351,54 +351,83 @@ hr { border-color: var(--soft-line); }
     padding: 6px 0;
 }
 .action-group-header {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    padding: 10px 0 6px 0;
-    margin-bottom: 4px;
+    letter-spacing: 0.14em;
+    padding: 16px 0 8px 0;
+    margin-bottom: 6px;
+    text-shadow: 0 0 20px currentColor;
 }
 .action-row {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 20px 14px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+    overflow: hidden;
+}
+.action-row.critical {
+    background: rgba(255,59,78,0.07);
+    border-left: 4px solid #ff3b4e;
+    box-shadow: 0 0 30px rgba(255,59,78,0.12), inset 0 0 40px rgba(255,59,78,0.04);
+    animation: pulse-ff3b4e 2s infinite;
+}
+.action-row.warning {
+    background: rgba(255,192,32,0.06);
+    border-left: 4px solid #ffc020;
+    box-shadow: 0 0 24px rgba(255,192,32,0.10), inset 0 0 40px rgba(255,192,32,0.03);
+    animation: pulse-amber 3s infinite;
+}
+.action-top {
+    display: flex;
     align-items: center;
     gap: 14px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 6px;
-    border: 1px solid rgba(255,255,255,0.07);
-    background: rgba(255,255,255,0.03);
 }
-.action-row.critical { border-left: 3px solid #ff3b4e; }
-.action-row.warning  { border-left: 3px solid #ffc020; }
 .action-machine {
-    font-size: 15px;
+    font-size: 22px;
     font-weight: 900;
-    color: #ccdcf0;
-    min-width: 60px;
+    color: #fff;
+    min-width: 72px;
+    letter-spacing: 0.04em;
 }
 .action-badge {
     font-size: 10px;
-    font-weight: 800;
-    padding: 3px 8px;
+    font-weight: 900;
+    padding: 4px 10px;
     border-radius: 4px;
-    min-width: 70px;
+    min-width: 76px;
     text-align: center;
+    letter-spacing: 0.08em;
 }
-.action-badge.critical { background:rgba(255,59,78,0.15); color:#ff3b4e; }
-.action-badge.warning  { background:rgba(255,192,32,0.12); color:#ffc020; }
+.action-badge.critical { background:rgba(255,59,78,0.20); color:#ff3b4e; border:1px solid rgba(255,59,78,0.40); }
+.action-badge.warning  { background:rgba(255,192,32,0.15); color:#ffc020; border:1px solid rgba(255,192,32,0.35); }
 .action-comps {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
     flex: 1;
 }
-.action-comp-tag {
-    font-size: 10px;
+.action-comp-tag.critical {
+    font-size: 11px;
     font-weight: 700;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 4px;
-    background: rgba(255,255,255,0.07);
-    color: #8faac8;
+    background: rgba(255,59,78,0.15);
+    color: #ff3b4e;
+    border: 1px solid rgba(255,59,78,0.30);
+}
+.action-comp-tag.warning {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: rgba(255,192,32,0.12);
+    color: #ffc020;
+    border: 1px solid rgba(255,192,32,0.28);
 }
 .action-btns {
     display: flex;
@@ -409,7 +438,7 @@ hr { border-color: var(--soft-line); }
 .action-btn {
     font-size: 11px;
     font-weight: 700;
-    padding: 5px 12px;
+    padding: 6px 14px;
     border-radius: 5px;
     cursor: pointer;
     border: 1px solid;
@@ -423,6 +452,19 @@ hr { border-color: var(--soft-line); }
     background: rgba(255,192,32,0.08);
     border-color: rgba(255,192,32,0.35);
     color: #ffc020;
+}
+.heartbeat-line {
+    width: 100%;
+    height: 32px;
+    overflow: visible;
+}
+@keyframes ecg-critical {
+    0%   { stroke-dashoffset: 300; }
+    100% { stroke-dashoffset: 0; }
+}
+@keyframes ecg-warning {
+    0%   { stroke-dashoffset: 300; }
+    100% { stroke-dashoffset: 0; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1030,18 +1072,31 @@ if page == "Overview":
             for _, row in group.iterrows():
                 mid = f"M{str(int(row['machine_id'])).zfill(3)}"
                 css = severity.lower()
+                stroke = "#ff3b4e" if severity == "CRITICAL" else "#ffc020"
+                speed = "1.2s" if severity == "CRITICAL" else "2.2s"
                 flagging_comps = [COMP_NAMES[c] for c in COMP_KEYS if row.get(f"{c}_status") != "HEALTHY"]
-                comp_tags = "".join([f'<span class="action-comp-tag">{c}</span>' for c in flagging_comps])
+                comp_tags = "".join([f'<span class="action-comp-tag {css}">{c}</span>' for c in flagging_comps])
+                if severity == "CRITICAL":
+                    ecg_path = "M0,16 L18,16 L24,2 L30,30 L36,16 L44,16 L48,8 L52,24 L56,16 L300,16"
+                else:
+                    ecg_path = "M0,16 L30,16 L38,6 L44,26 L50,16 L300,16"
                 rows += f"""
-                <div class="action-row {css}">
-                    <div class="action-machine">{mid}</div>
-                    <div class="action-badge {css}">{severity}</div>
-                    <div class="action-comps">{comp_tags}</div>
-                    <div class="action-btns">
-                        <div class="action-btn schedule">📅 Schedule</div>
-                        <div class="action-btn alert">🔔 Set Alert</div>
-                    </div>
-                </div>"""
+                            <div class="action-row {css}">
+                                <div class="action-top">
+                                    <div class="action-machine">{mid}</div>
+                                    <div class="action-badge {css}">{severity}</div>
+                                    <div class="action-comps">{comp_tags}</div>
+                                    <div class="action-btns">
+                                        <div class="action-btn schedule">📅 Schedule</div>
+                                        <div class="action-btn alert">🔔 Set Alert</div>
+                                    </div>
+                                </div>
+                                <svg class="heartbeat-line" viewBox="0 0 300 32" preserveAspectRatio="none">
+                                    <path d="{ecg_path}" fill="none" stroke="{stroke}" stroke-width="1.5"
+                                          stroke-dasharray="300" stroke-dashoffset="300" opacity="0.6"
+                                          style="animation: ecg-{css} {speed} linear infinite;"/>
+                                </svg>
+                            </div>"""
             st.markdown(rows, unsafe_allow_html=True)
 
     # RUL histogram
