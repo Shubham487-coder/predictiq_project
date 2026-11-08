@@ -285,9 +285,9 @@ hr { border-color: var(--soft-line); }
     50% { box-shadow: 0 0 16px 4px rgba(255,192,32,0.30); }
 }
 .fault-row {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 0 20px rgba(47,140,255,0.08);
+    background: rgba(23,216,139,0.04);
+    border: 1px solid rgba(23,216,139,0.12);
+    box-shadow: inset 0 0 40px rgba(23,216,139,0.04), 0 0 20px rgba(23,216,139,0.06);
     border-radius: 10px;
     padding: 14px 18px;
     margin-bottom: 10px;
