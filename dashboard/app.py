@@ -350,6 +350,80 @@ hr { border-color: var(--soft-line); }
     font-weight: 700;
     padding: 6px 0;
 }
+.action-group-header {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 10px 0 6px 0;
+    margin-bottom: 4px;
+}
+.action-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.03);
+}
+.action-row.critical { border-left: 3px solid #ff3b4e; }
+.action-row.warning  { border-left: 3px solid #ffc020; }
+.action-machine {
+    font-size: 15px;
+    font-weight: 900;
+    color: #ccdcf0;
+    min-width: 60px;
+}
+.action-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 4px;
+    min-width: 70px;
+    text-align: center;
+}
+.action-badge.critical { background:rgba(255,59,78,0.15); color:#ff3b4e; }
+.action-badge.warning  { background:rgba(255,192,32,0.12); color:#ffc020; }
+.action-comps {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+.action-comp-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.07);
+    color: #8faac8;
+}
+.action-btns {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.action-btn {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid;
+}
+.action-btn.schedule {
+    background: rgba(47,140,255,0.12);
+    border-color: rgba(47,140,255,0.40);
+    color: #2f8cff;
+}
+.action-btn.alert {
+    background: rgba(255,192,32,0.08);
+    border-color: rgba(255,192,32,0.35);
+    color: #ffc020;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -913,42 +987,62 @@ if page == "Overview":
     st.markdown(rows_html, unsafe_allow_html=True)
 
     # Top 10 table
-    st.markdown('<div class="section-title">Top 10 Machines Needing Attention</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Maintenance Action Panel</div>', unsafe_allow_html=True)
     info_box(
-        "How is this table sorted and what does each column mean?",
-        f"""This table lists the <b>10 machines that need attention most urgently</b>, sorted so the most critical machines appear at the top.<br><br>
-        <b>Column explanations:</b><br><br>
-        📌 <b>Machine</b> — The unique ID of the engine (e.g. M032 = Machine 32)<br><br>
-        🚦 <b>Status</b> — The overall health of this machine. CRITICAL means act now, WARNING means watch closely, HEALTHY means all good.<br><br>
-        🔢 <b>Priority (1=urgent)</b> — A ranking from 1 to 4. Priority 1 means this machine should be fixed <i>before all others</i>. Priority 4 means it can wait.<br><br>
-        ⏱ <b>Min RUL (hours)</b> — The shortest Remaining Useful Life across all 4 components on this machine. This is how many hours you have before the most degraded component needs maintenance. <span style="color:{C_RED};">Red = under 48h</span>, <span style="color:{C_AMBER};">Amber = under 72h</span>.<br><br>
-        📊 <b>Fan / Core Engine / HP Turbine / LP Turbine Fail %</b> — The failure probability (0–100%) for each individual component. 100% means the model is certain this component will fail very soon. 0% means it's healthy.<br><br>
-        <b>How to use this:</b> Work down this list from top to bottom. Schedule maintenance for Priority 1 machines immediately, then work your way down."""
+        "What does this panel show?",
+        f"""This panel lists only the machines that need attention right now — healthy machines are not shown.<br><br>
+        🔴 <b style="color:{C_RED};">CRITICAL</b> — A component on this machine is predicted to fail very soon.
+        Act immediately — do not wait for the next scheduled inspection.<br><br>
+        🟡 <b style="color:{C_AMBER};">WARNING</b> — Early signs of degradation detected. Schedule an inspection
+        within 3 days to prevent escalation to CRITICAL.<br><br>
+        The <b>Flagging Components</b> column shows which specific components need attention on each machine.
+        Use the action buttons to schedule maintenance or set an alert."""
     )
-    top10 = clf_rich_sorted.head(10)[[
-        "machine_id","overall_status","priority","min_rul_hours",
-        "comp1_prob","comp2_prob","comp3_prob","comp4_prob",
-    ]].copy()
-    top10["min_rul_hours"] = top10["min_rul_hours"].round(1)
-    for c in COMP_KEYS:
-        top10[c + "_prob"] = (top10[c + "_prob"]*100).round(1)
-    top10.columns = [
-        "Machine", "Status", "Priority (1=urgent)",
-        "Min RUL (hours)",
-        f"Fan Fail %", f"Core Engine Fail %", f"HP Turbine Fail %", f"LP Turbine Fail %"
-    ]
 
-    STATUS_BG = {"CRITICAL":"rgba(255,59,78,0.14)","WARNING":"rgba(255,192,32,0.12)","HEALTHY":"rgba(0,245,160,0.10)"}
-    def _top10_fns(col):
-        if col == "Status":
-            return lambda v: (f"background:{STATUS_BG.get(v,'')};color:{STATUS_COLOR.get(v,C_INK)};"
-                              f"font-weight:800;")
-        if col == "Min RUL (hours)":
-            return lambda v: (f"color:{C_RED};font-weight:700;" if isinstance(v,(int,float)) and v<48
-                              else f"color:{C_AMBER};font-weight:700;" if isinstance(v,(int,float)) and v<72
-                              else f"color:{C_INK};")
-        return None
-    dark_table(top10, {c: _top10_fns(c) for c in top10.columns if _top10_fns(c)})
+    action_machines = clf_rich_sorted[clf_rich_sorted["overall_status"] != "HEALTHY"].copy()
+
+    if action_machines.empty:
+        st.markdown(f"""
+        <div style="display:flex; align-items:center; gap:14px; padding:24px 20px;
+                    border-radius:10px; border:1px solid rgba(23,216,139,0.25);
+                    background:rgba(23,216,139,0.05); margin-top:8px;">
+            <div style="font-size:32px;">✅</div>
+            <div>
+                <div style="font-size:15px; font-weight:800; color:{C_GREEN};">
+                    All machines operating normally
+                </div>
+                <div style="font-size:12px; color:{C_MUTED}; margin-top:4px;">
+                    No maintenance action required at this time
+                </div>
+            </div>
+        </div>""", unsafe_allow_html=True)
+    else:
+        for severity, group_label, group_color in [
+            ("CRITICAL", "🔴 Requires Immediate Action", C_RED),
+            ("WARNING",  "🟡 Schedule Within 3 Days",   C_AMBER),
+        ]:
+            group = action_machines[action_machines["overall_status"] == severity]
+            if group.empty:
+                continue
+            st.markdown(f'<div class="action-group-header" style="color:{group_color};">{group_label}</div>',
+                        unsafe_allow_html=True)
+            rows = ""
+            for _, row in group.iterrows():
+                mid = f"M{str(int(row['machine_id'])).zfill(3)}"
+                css = severity.lower()
+                flagging_comps = [COMP_NAMES[c] for c in COMP_KEYS if row.get(f"{c}_status") != "HEALTHY"]
+                comp_tags = "".join([f'<span class="action-comp-tag">{c}</span>' for c in flagging_comps])
+                rows += f"""
+                <div class="action-row {css}">
+                    <div class="action-machine">{mid}</div>
+                    <div class="action-badge {css}">{severity}</div>
+                    <div class="action-comps">{comp_tags}</div>
+                    <div class="action-btns">
+                        <div class="action-btn schedule">📅 Schedule</div>
+                        <div class="action-btn alert">🔔 Set Alert</div>
+                    </div>
+                </div>"""
+            st.markdown(rows, unsafe_allow_html=True)
 
     # RUL histogram
     st.markdown('<div class="section-title">Remaining Useful Life — All Engines</div>', unsafe_allow_html=True)
