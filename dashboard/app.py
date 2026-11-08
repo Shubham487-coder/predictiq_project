@@ -285,8 +285,9 @@ hr { border-color: var(--soft-line); }
     50% { box-shadow: 0 0 16px 4px rgba(255,192,32,0.30); }
 }
 .fault-row {
-    background: rgba(10,19,32,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 0 20px rgba(47,140,255,0.08);
     border-radius: 10px;
     padding: 14px 18px;
     margin-bottom: 10px;
@@ -330,6 +331,11 @@ hr { border-color: var(--soft-line); }
     background: rgba(255,192,32,0.08);
     border: 1px solid rgba(255,192,32,0.45);
     animation: pulse-amber 3s infinite;
+}
+.machine-tag.healthy {
+    background: rgba(0,245,160,0.06);
+    border: 1px solid rgba(0,245,160,0.30);
+    animation: none;
 }
 .machine-tag .tag-id {
     font-size: 13px;
@@ -858,19 +864,25 @@ if page == "Overview":
 
 
     def make_tag(machine_id, severity, comp_key):
-        c1 = "#ff3b4e" if severity == "CRITICAL" else "#ffc020"
-        c2 = "#7a0010" if severity == "CRITICAL" else "#7a5500"
-        css_class = "critical" if severity == "CRITICAL" else "warning"
+        if severity == "HEALTHY":
+            c1, c2, css_class = "#17d88b", "#0a5a3a", "healthy"
+            label_html = ""
+        elif severity == "CRITICAL":
+            c1, c2, css_class = "#ff3b4e", "#7a0010", "critical"
+            label_html = f'<div class="tag-id">M{str(machine_id).zfill(3)}</div>'
+        else:
+            c1, c2, css_class = "#ffc020", "#7a5500", "warning"
+            label_html = f'<div class="tag-id">M{str(machine_id).zfill(3)}</div>'
         svg = COMP_SVG[comp_key].replace("{c1}", c1).replace("{c2}", c2)
         return f"""<div class="machine-tag {css_class}">
             {svg}
-            <div class="tag-id">M{str(machine_id).zfill(3)}</div>
+            {label_html}
         </div>"""
 
 
     rows_html = ""
     for comp_key in COMP_KEYS:
-        label = COMP_LABEL[comp_key]
+        label = COMP_NAMES[comp_key]
         flagging = clf[clf[f"{comp_key}_status"] != "HEALTHY"][["machine_id", f"{comp_key}_status"]].copy()
         flagging = flagging.sort_values(f"{comp_key}_status", key=lambda s: s.map({"CRITICAL": 0, "WARNING": 1}))
         n_flag = len(flagging)
@@ -879,21 +891,7 @@ if page == "Overview":
             flagging[f"{comp_key}_status"] == "CRITICAL") else C_AMBER if n_flag > 0 else "#3a7a5a"
 
         if n_flag == 0:
-            tags_html = """<div class="machine-tag" style="background:rgba(0,245,160,0.06);
-                                        border:1px solid rgba(0,245,160,0.30); animation:none;
-                                        min-width:56px; padding:8px 10px;">
-                                        <svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-                                          <circle cx="20" cy="20" r="16" fill="rgba(0,245,160,0.08)"
-                                                  stroke="#17d88b" stroke-width="1" opacity="0.5"/>
-                                          <circle cx="20" cy="20" r="9" fill="rgba(0,245,160,0.10)"
-                                                  stroke="#17d88b" stroke-width="1" opacity="0.6"/>
-                                          <circle cx="20" cy="20" r="3" fill="#17d88b" opacity="0.8"/>
-                                          <path d="M20,11 L21,5 L20,8 L19,5 Z" fill="#17d88b" opacity="0.6"/>
-                                          <path d="M29,20 L35,19 L32,20 L35,21 Z" fill="#17d88b" opacity="0.6"/>
-                                          <path d="M20,29 L21,35 L20,32 L19,35 Z" fill="#17d88b" opacity="0.6"/>
-                                          <path d="M11,20 L5,19 L8,20 L5,21 Z" fill="#17d88b" opacity="0.6"/>
-                                        </svg>
-                                    </div>"""
+            tags_html = make_tag(0, "HEALTHY", comp_key)
         else:
             tags_html = '<div class="machine-tags">'
             for _, row in flagging.iterrows():
