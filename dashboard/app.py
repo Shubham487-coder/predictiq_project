@@ -1100,34 +1100,7 @@ if page == "Overview":
             st.markdown(rows, unsafe_allow_html=True)
 
     # RUL histogram
-    st.markdown('<div class="section-title">Remaining Useful Life — All Engines</div>', unsafe_allow_html=True)
-    info_box(
-        "What does this histogram show?",
-        f"""This chart shows the <b>distribution of Remaining Useful Life (RUL)</b> across every component of every machine in the fleet — that's {n_total} machines × 4 components = {n_total*4} data points.<br><br>
-        <b>What is RUL?</b><br>
-        RUL (Remaining Useful Life) is the number of hours a component is predicted to last before it needs maintenance or replacement. It is calculated by our ML model based on historical sensor patterns.<br><br>
-        <b>How to read this chart:</b><br>
-        — The <b>horizontal axis</b> shows hours of remaining life<br>
-        — The <b>vertical axis</b> shows how many components have that RUL<br>
-        — <span style="color:{C_RED};">🔴 Red bars (URGENT)</span> — these components need attention very soon<br>
-        — <span style="color:{C_AMBER};">🟡 Amber bars (MONITOR)</span> — these are in early-warning territory<br>
-        — <span style="color:{C_GREEN};">🟢 Green bars (HEALTHY)</span> — these components have plenty of life left<br><br>
-        <b>How to use this:</b> A healthy fleet should have most bars on the right (high RUL). If you see a large cluster of red bars on the left, a wave of maintenance work is approaching soon."""
-    )
-    fig_hist = px.histogram(
-        rul, x="predicted_rul_hours", nbins=40,
-        color="interpretation",
-        color_discrete_map={"HEALTHY": C_GREEN, "MONITOR": C_AMBER, "URGENT": C_RED},
-        labels={"predicted_rul_hours":"Remaining Useful Life (hours)", "interpretation": "Outlook"},
-    )
-    fig_hist.update_layout(
-        **PLOTLY_THEME, height=280,
-        margin=dict(l=20,r=20,t=20,b=20), bargap=0.05,
-        legend=dict(font_color=C_MUTED, bgcolor="rgba(0,0,0,0)"),
-        xaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED),
-        yaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED, title="Number of Components"),
-    )
-    st.plotly_chart(fig_hist, use_container_width=True)
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
