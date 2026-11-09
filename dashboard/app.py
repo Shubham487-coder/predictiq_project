@@ -812,90 +812,6 @@ priority_order = {"CRITICAL": 0, "WARNING": 1, "HEALTHY": 2}
 clf_rich["_prio"] = clf_rich["overall_status"].map(priority_order)
 clf_rich_sorted = clf_rich.sort_values(["_prio", "min_rul_hours"]).drop(columns="_prio")
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE 1 — OVERVIEW
-# ═══════════════════════════════════════════════════════════════════════════════
-
-page = st.session_state.get("page", "Overview")
-
-if page == "Overview":
-    run_at_str = run_at.strftime("%Y-%m-%d %H:%M UTC") if run_at else "—"
-
-    st.markdown(f"""
-    <div style="display:flex; align-items:flex-start; justify-content:space-between;
-                margin-bottom:4px;">
-        <div>
-            <h1 style="margin:0 0 4px; font-size:25px; color:#fff;
-                       text-shadow:0 0 22px rgba(47,140,255,0.28);">Fleet Overview</h1>
-            <p style="margin:0; color:{C_MUTED}; font-size:13px;">
-                Real-time health across {n_total} machines
-            </p>
-        </div>
-        <div style="border:1px solid {C_LINE}; border-radius:8px;
-                    background:rgba(10,19,32,0.78); padding:8px 14px; text-align:right;">
-            <div style="font-size:10px; color:{C_MUTED}; text-transform:uppercase;
-                        letter-spacing:0.1em; margin-bottom:2px;">Last Run</div>
-            <div style="font-size:13px; color:{C_CYAN}; font-weight:700;">{run_at_str}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # How to read this dashboard
-    with st.expander("ℹ️  How to read these cards"):
-        st.markdown(f"""
-        <div style="font-size:13px; color:{C_INK}; line-height:1.8;">
-        Each card shows how many of the 100 engines currently fall into that health category,
-        based on the latest pipeline run.<br><br>
-        🔴 <b style="color:{C_RED};">CRITICAL</b> — One or more components on this engine are
-        predicted to fail very soon. Fix these first.<br><br>
-        🟡 <b style="color:{C_AMBER};">WARNING</b> — Early signs of degradation detected.
-        Not urgent, but schedule an inspection this week.<br><br>
-        🟢 <b style="color:{C_GREEN};">HEALTHY</b> — All components are operating normally.
-        No action needed.<br><br>
-        The bar under each number shows that count as a share of all 100 engines.
-        A wider red bar means more machines need immediate attention.
-        </div>
-        """, unsafe_allow_html=True)
-
-    # KPI row — 3 cards only
-    c1, c2, c3 = st.columns(3)
-
-    def stat_card(col, label, val, color, desc, pulse=False):
-        pct = round((val / n_total) * 100, 1) if n_total else 0
-        pulse_css = f"animation: pulse-{color.replace('#','')} 2s infinite;" if pulse and val > 0 else ""
-        with col:
-            st.markdown(f"""
-            <div class="metric-card" style="position:relative; overflow:hidden; {pulse_css}">
-                <div class="metric-label">{label}</div>
-                <div class="metric-value" style="color:{color}; font-size:42px; font-weight:900;
-                     margin:6px 0 2px; line-height:1;">{val}</div>
-                <div style="font-size:11px; color:{C_MUTED}; margin-bottom:10px;">of {n_total} machines</div>
-                <div style="background:{C_LINE}; border-radius:4px; height:5px; width:100%; margin-bottom:8px;">
-                    <div style="background:{color}; border-radius:4px; height:5px;
-                         width:{pct}%; opacity:0.85; transition:width 0.6s ease;"></div>
-                </div>
-                <div style="font-size:11px; color:{C_MUTED}; line-height:1.4;">{desc}</div>
-            </div>""", unsafe_allow_html=True)
-
-    stat_card(c1, "🔴 CRITICAL", n_critical, C_RED,    STATUS_DESC["CRITICAL"], pulse=True)
-    stat_card(c2, "🟡 WARNING",  n_warning,  C_AMBER,  STATUS_DESC["WARNING"])
-    stat_card(c3, "🟢 HEALTHY",  n_healthy,  C_GREEN,  STATUS_DESC["HEALTHY"])
-
-    # Charts row
-
-
-    st.markdown('<div class="section-title">Component Fault Panel</div>', unsafe_allow_html=True)
-    info_box(
-        "What does this panel show?",
-        f"""This panel shows which machines are currently flagging each component as degraded.<br><br>
-        Each tag represents one machine — <b style="color:{C_RED};">🔴 red tags</b> need immediate action,
-        <b style="color:{C_AMBER};">🟡 amber tags</b> should be inspected soon.<br><br>
-        A machine appearing in multiple rows has more than one component affected — prioritise those first.<br><br>
-        Machines running normally are not shown. If a row shows <span style="color:#3a7a5a;">✓ All clear</span>,
-        no machine in the fleet is flagging that component right now."""
-    )
-
 COMP_SVG = {
     "comp1": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -994,6 +910,92 @@ def make_tag(machine_id, severity, comp_key):
         {svg}
         {label_html}
     </div>"""
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PAGE 1 — OVERVIEW
+# ═══════════════════════════════════════════════════════════════════════════════
+
+page = st.session_state.get("page", "Overview")
+
+if page == "Overview":
+    run_at_str = run_at.strftime("%Y-%m-%d %H:%M UTC") if run_at else "—"
+
+    st.markdown(f"""
+    <div style="display:flex; align-items:flex-start; justify-content:space-between;
+                margin-bottom:4px;">
+        <div>
+            <h1 style="margin:0 0 4px; font-size:25px; color:#fff;
+                       text-shadow:0 0 22px rgba(47,140,255,0.28);">Fleet Overview</h1>
+            <p style="margin:0; color:{C_MUTED}; font-size:13px;">
+                Real-time health across {n_total} machines
+            </p>
+        </div>
+        <div style="border:1px solid {C_LINE}; border-radius:8px;
+                    background:rgba(10,19,32,0.78); padding:8px 14px; text-align:right;">
+            <div style="font-size:10px; color:{C_MUTED}; text-transform:uppercase;
+                        letter-spacing:0.1em; margin-bottom:2px;">Last Run</div>
+            <div style="font-size:13px; color:{C_CYAN}; font-weight:700;">{run_at_str}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # How to read this dashboard
+    with st.expander("ℹ️  How to read these cards"):
+        st.markdown(f"""
+        <div style="font-size:13px; color:{C_INK}; line-height:1.8;">
+        Each card shows how many of the 100 engines currently fall into that health category,
+        based on the latest pipeline run.<br><br>
+        🔴 <b style="color:{C_RED};">CRITICAL</b> — One or more components on this engine are
+        predicted to fail very soon. Fix these first.<br><br>
+        🟡 <b style="color:{C_AMBER};">WARNING</b> — Early signs of degradation detected.
+        Not urgent, but schedule an inspection this week.<br><br>
+        🟢 <b style="color:{C_GREEN};">HEALTHY</b> — All components are operating normally.
+        No action needed.<br><br>
+        The bar under each number shows that count as a share of all 100 engines.
+        A wider red bar means more machines need immediate attention.
+        </div>
+        """, unsafe_allow_html=True)
+
+    # KPI row — 3 cards only
+    c1, c2, c3 = st.columns(3)
+
+    def stat_card(col, label, val, color, desc, pulse=False):
+        pct = round((val / n_total) * 100, 1) if n_total else 0
+        pulse_css = f"animation: pulse-{color.replace('#','')} 2s infinite;" if pulse and val > 0 else ""
+        with col:
+            st.markdown(f"""
+            <div class="metric-card" style="position:relative; overflow:hidden; {pulse_css}">
+                <div class="metric-label">{label}</div>
+                <div class="metric-value" style="color:{color}; font-size:42px; font-weight:900;
+                     margin:6px 0 2px; line-height:1;">{val}</div>
+                <div style="font-size:11px; color:{C_MUTED}; margin-bottom:10px;">of {n_total} machines</div>
+                <div style="background:{C_LINE}; border-radius:4px; height:5px; width:100%; margin-bottom:8px;">
+                    <div style="background:{color}; border-radius:4px; height:5px;
+                         width:{pct}%; opacity:0.85; transition:width 0.6s ease;"></div>
+                </div>
+                <div style="font-size:11px; color:{C_MUTED}; line-height:1.4;">{desc}</div>
+            </div>""", unsafe_allow_html=True)
+
+    stat_card(c1, "🔴 CRITICAL", n_critical, C_RED,    STATUS_DESC["CRITICAL"], pulse=True)
+    stat_card(c2, "🟡 WARNING",  n_warning,  C_AMBER,  STATUS_DESC["WARNING"])
+    stat_card(c3, "🟢 HEALTHY",  n_healthy,  C_GREEN,  STATUS_DESC["HEALTHY"])
+
+    # Charts row
+
+
+    st.markdown('<div class="section-title">Component Fault Panel</div>', unsafe_allow_html=True)
+    info_box(
+        "What does this panel show?",
+        f"""This panel shows which machines are currently flagging each component as degraded.<br><br>
+        Each tag represents one machine — <b style="color:{C_RED};">🔴 red tags</b> need immediate action,
+        <b style="color:{C_AMBER};">🟡 amber tags</b> should be inspected soon.<br><br>
+        A machine appearing in multiple rows has more than one component affected — prioritise those first.<br><br>
+        Machines running normally are not shown. If a row shows <span style="color:#3a7a5a;">✓ All clear</span>,
+        no machine in the fleet is flagging that component right now."""
+    )
+
+
 
 
     rows_html = ""
