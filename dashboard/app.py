@@ -1147,43 +1147,44 @@ elif page == "RUL Explorer":
     if "rul_filter" not in st.session_state:
         st.session_state.rul_filter = "all"
 
-    # Render buttons first (invisible), then SVG cards overlaid via negative margin
+    # Invisible button CSS
     st.markdown("""<style>
-    div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] button {
+    .rul-filter-btn button {
         opacity: 0 !important;
         height: 90px !important;
         width: 100% !important;
         cursor: pointer !important;
-        border-radius: 12px !important;
+        position: relative !important;
+        z-index: 2 !important;
+        margin-bottom: -90px !important;
     }
     </style>""", unsafe_allow_html=True)
 
-    btn_cols = st.columns(5)
-    for i, key in enumerate(COMP_FILTER_KEYS):
-        with btn_cols[i]:
-            if st.button("x", key=f"rul_btn_{key}", use_container_width=True):
-                st.session_state.rul_filter = key
-                st.rerun()
-
-    # SVG icon cards rendered on top via negative margin
-    card_cols = st.columns(5)
+    filter_cols = st.columns(5)
     for i, key in enumerate(COMP_FILTER_KEYS):
         color = COMP_FILTER_COLOR[key]
         r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
         is_active = st.session_state.rul_filter == key
-        glow   = f"0 0 18px rgba({r},{g},{b},0.65)" if is_active else f"0 0 10px rgba({r},{g},{b},0.28)"
-        border = f"2px solid rgba({r},{g},{b},1.0)" if is_active else f"1px solid rgba({r},{g},{b},0.45)"
-        bg     = f"rgba({r},{g},{b},0.18)" if is_active else f"rgba({r},{g},{b},0.07)"
+        glow        = f"0 0 18px rgba({r},{g},{b},0.65)" if is_active else f"0 0 10px rgba({r},{g},{b},0.28)"
+        border      = f"2px solid rgba({r},{g},{b},1.0)" if is_active else f"1px solid rgba({r},{g},{b},0.45)"
+        bg          = f"rgba({r},{g},{b},0.18)" if is_active else f"rgba({r},{g},{b},0.07)"
         label_color = "#fff" if is_active else f"rgba({r},{g},{b},0.85)"
-        fw = "800" if is_active else "500"
+        fw          = "800" if is_active else "500"
         if key == "all":
             icon_html = '<div style="font-size:24px; margin-bottom:4px;">🔧</div>'
         else:
             svg = COMP_SVG[key].replace("{c1}", color).replace("{c2}", color)
             icon_html = f'<div style="margin-bottom:4px;">{svg}</div>'
-        with card_cols[i]:
+        with filter_cols[i]:
+            # Invisible button on top (z-index 2), clicks pass through visually
+            st.markdown('<div class="rul-filter-btn">', unsafe_allow_html=True)
+            if st.button(" ", key=f"rul_btn_{key}", use_container_width=True):
+                st.session_state.rul_filter = key
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+            # SVG card behind the button (pulled up to same position)
             st.markdown(
-                f'<div style="pointer-events:none; margin-top:-96px; height:90px; '
+                f'<div style="pointer-events:none; margin-top:-90px; height:90px; '
                 f'border:{border}; background:{bg}; box-shadow:{glow}; '
                 f'border-radius:12px; display:flex; flex-direction:column; '
                 f'align-items:center; justify-content:center;">'
