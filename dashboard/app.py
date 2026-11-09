@@ -817,7 +817,11 @@ clf_rich_sorted = clf_rich.sort_values(["_prio", "min_rul_hours"]).drop(columns=
 # PAGE 1 — OVERVIEW
 # ═══════════════════════════════════════════════════════════════════════════════
 
+_valid_pages = ["Overview", "RUL Explorer", "Machine Detail", "Alerts"]
 page = st.session_state.get("page", "Overview")
+if page not in _valid_pages:
+    page = "Overview"
+    st.session_state.page = "Overview"
 
 if page == "Overview":
     run_at_str = run_at.strftime("%Y-%m-%d %H:%M UTC") if run_at else "—"
