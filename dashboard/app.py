@@ -696,11 +696,7 @@ def render_sidebar():
     </div>
     """, unsafe_allow_html=True)
 
-    st.session_state.page = st.radio(
-        "nav",
-        ["Overview", "RUL Explorer", "Alerts"],
-        label_visibility="collapsed",
-    )
+
 
     st.markdown(f'<div class="section-title">Run Pipeline</div>', unsafe_allow_html=True)
 
@@ -778,6 +774,11 @@ def render_sidebar():
         st.rerun()
 
 with st.sidebar:
+    st.session_state.page = st.radio(
+        "nav",
+        ["Overview", "RUL Explorer", "Alerts"],
+        label_visibility="collapsed",
+    )
     render_sidebar()
 # ── Load data ─────────────────────────────────────────────────────────────────
 
