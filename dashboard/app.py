@@ -1147,40 +1147,51 @@ elif page == "RUL Explorer":
     if "rul_filter" not in st.session_state:
         st.session_state.rul_filter = "all"
 
-    COMP_FILTER_EMOJI = {"all": "🔧", "comp1": "🌀", "comp2": "⚙️", "comp3": "🔥", "comp4": "💨"}
+    # Render buttons first (invisible), then SVG cards overlaid via negative margin
+    st.markdown("""<style>
+    div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] button {
+        opacity: 0 !important;
+        height: 90px !important;
+        width: 100% !important;
+        cursor: pointer !important;
+        border-radius: 12px !important;
+    }
+    </style>""", unsafe_allow_html=True)
 
-    # One CSS block per button using data-testid
-    filter_css = "<style>"
-    for key in COMP_FILTER_KEYS:
+    btn_cols = st.columns(5)
+    for i, key in enumerate(COMP_FILTER_KEYS):
+        with btn_cols[i]:
+            if st.button("x", key=f"rul_btn_{key}", use_container_width=True):
+                st.session_state.rul_filter = key
+                st.rerun()
+
+    # SVG icon cards rendered on top via negative margin
+    card_cols = st.columns(5)
+    for i, key in enumerate(COMP_FILTER_KEYS):
         color = COMP_FILTER_COLOR[key]
         r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
         is_active = st.session_state.rul_filter == key
         glow   = f"0 0 18px rgba({r},{g},{b},0.65)" if is_active else f"0 0 10px rgba({r},{g},{b},0.28)"
         border = f"2px solid rgba({r},{g},{b},1.0)" if is_active else f"1px solid rgba({r},{g},{b},0.45)"
         bg     = f"rgba({r},{g},{b},0.18)" if is_active else f"rgba({r},{g},{b},0.07)"
-        txt    = "#ffffff" if is_active else f"rgba({r},{g},{b},0.85)"
-        fw     = "800" if is_active else "500"
-        filter_css += f"""
-    [data-testid="stButton"] button[data-testid="baseButton-secondary"]:has(+ [data-testid="tooltipHoverTarget"] [title="{key}"]),
-    [data-testid="stButton"]:has(button p:contains('{COMP_FILTER_EMOJI[key]}')) button {{
-        border: {border} !important; background: {bg} !important;
-        box-shadow: {glow} !important; border-radius: 12px !important;
-        height: 80px !important; width: 100% !important;
-        font-size: 13px !important; font-weight: {fw} !important;
-        color: {txt} !important; white-space: pre-line !important;
-        line-height: 1.8 !important;
-    }}"""
-    filter_css += "</style>"
-    st.markdown(filter_css, unsafe_allow_html=True)
-
-    btn_cols = st.columns(5)
-    for i, key in enumerate(COMP_FILTER_KEYS):
-        emoji = COMP_FILTER_EMOJI[key]
-        label = f"{emoji}\n{COMP_FILTER_NAMES[key]}"
-        with btn_cols[i]:
-            if st.button(label, key=f"rul_btn_{key}", use_container_width=True):
-                st.session_state.rul_filter = key
-                st.rerun()
+        label_color = "#fff" if is_active else f"rgba({r},{g},{b},0.85)"
+        fw = "800" if is_active else "500"
+        if key == "all":
+            icon_html = '<div style="font-size:24px; margin-bottom:4px;">🔧</div>'
+        else:
+            svg = COMP_SVG[key].replace("{c1}", color).replace("{c2}", color)
+            icon_html = f'<div style="margin-bottom:4px;">{svg}</div>'
+        with card_cols[i]:
+            st.markdown(
+                f'<div style="pointer-events:none; margin-top:-96px; height:90px; '
+                f'border:{border}; background:{bg}; box-shadow:{glow}; '
+                f'border-radius:12px; display:flex; flex-direction:column; '
+                f'align-items:center; justify-content:center;">'
+                f'{icon_html}'
+                f'<div style="font-size:11px; font-weight:{fw}; color:{label_color};">'
+                f'{COMP_FILTER_NAMES[key]}</div></div>',
+                unsafe_allow_html=True,
+            )
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
 
