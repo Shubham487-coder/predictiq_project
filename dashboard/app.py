@@ -979,21 +979,21 @@ COMP_LABEL = {
 }
 
 
-    def make_tag(machine_id, severity, comp_key):
-        if severity == "HEALTHY":
-            c1, c2, css_class = "#17d88b", "#0a5a3a", "healthy"
-            label_html = ""
-        elif severity == "CRITICAL":
-            c1, c2, css_class = "#ff3b4e", "#7a0010", "critical"
-            label_html = f'<div class="tag-id">M{str(machine_id).zfill(3)}</div>'
-        else:
-            c1, c2, css_class = "#ffc020", "#7a5500", "warning"
-            label_html = f'<div class="tag-id">M{str(machine_id).zfill(3)}</div>'
-        svg = COMP_SVG[comp_key].replace("{c1}", c1).replace("{c2}", c2)
-        return f"""<div class="machine-tag {css_class}">
-            {svg}
-            {label_html}
-        </div>"""
+def make_tag(machine_id, severity, comp_key):
+    if severity == "HEALTHY":
+        c1, c2, css_class = "#17d88b", "#0a5a3a", "healthy"
+        label_html = ""
+    elif severity == "CRITICAL":
+        c1, c2, css_class = "#ff3b4e", "#7a0010", "critical"
+        label_html = f'<div class="tag-id">M{str(machine_id).zfill(3)}</div>'
+    else:
+        c1, c2, css_class = "#ffc020", "#7a5500", "warning"
+        label_html = f'<div class="tag-id">M{str(machine_id).zfill(3)}</div>'
+    svg = COMP_SVG[comp_key].replace("{c1}", c1).replace("{c2}", c2)
+    return f"""<div class="machine-tag {css_class}">
+        {svg}
+        {label_html}
+    </div>"""
 
 
     rows_html = ""
