@@ -1137,42 +1137,69 @@ elif page == "RUL Explorer":
         unsafe_allow_html=True,
     )
 
-    # ── Component filter pills ────────────────────────────────────────────────
+    # ── Component filter ─────────────────────────────────────────────────────
     COMP_FILTER_KEYS  = ["all", "comp1", "comp2", "comp3", "comp4"]
     COMP_FILTER_NAMES = {"all": "All Components", "comp1": "Fan",
                          "comp2": "Core Engine", "comp3": "HP Turbine", "comp4": "LP Turbine"}
-    COMP_FILTER_COLOR = {"all": C_CYAN, "comp1": "#2f8cff",
-                         "comp2": "#ff6b35", "comp3": "#c97aff", "comp4": C_CYAN}
+    COMP_FILTER_COLOR = {"all": "#17d88b", "comp1": "#2f8cff",
+                         "comp2": "#ff6b35", "comp3": "#c97aff", "comp4": "#17d88b"}
 
     if "rul_filter" not in st.session_state:
         st.session_state.rul_filter = "all"
 
-    # Hide the transparent overlay buttons
-    st.markdown("""
-    <style>
-    div[data-testid="stButton"] > button {
-        position:absolute; top:0; left:0; width:100%; height:100%;
-        opacity:0; cursor:pointer; border:none; background:transparent;
-    }
-    </style>""", unsafe_allow_html=True)
+    # Build icon HTML per key
+    def _filter_icon(key, color):
+        if key == "all":
+            return f'<span style="font-size:22px;">🔧</span>'
+        svg = COMP_SVG[key].replace("{c1}", color).replace("{c2}", color)
+        return svg
+
+    # Inject CSS — style every button in this section as an icon card
+    filter_css = ""
+    for key in COMP_FILTER_KEYS:
+        color  = COMP_FILTER_COLOR[key]
+        r, g, b = int(color[1:3],16), int(color[3:5],16), int(color[5:7],16)
+        is_active = st.session_state.rul_filter == key
+        border_w  = "2px" if is_active else "1px"
+        border_op = "1.0" if is_active else "0.5"
+        bg_op     = "0.18" if is_active else "0.07"
+        glow      = f"0 0 18px rgba({r},{g},{b},0.6)" if is_active else f"0 0 10px rgba({r},{g},{b},0.3)"
+        filter_css += f"""
+        div[data-testid="stButton"]:has(button[data-testid="baseButton-secondary"][key="rul_btn_{key}"]) button,
+        button[key="rul_btn_{key}"] {{
+            border: {border_w} solid rgba({r},{g},{b},{border_op}) !important;
+            background: rgba({r},{g},{b},{bg_op}) !important;
+            box-shadow: {glow} !important;
+            border-radius: 12px !important;
+            padding: 12px 6px !important;
+            height: auto !important;
+            color: {"#fff" if is_active else "#8ab"} !important;
+            font-weight: {"800" if is_active else "400"} !important;
+            font-size: 11px !important;
+            width: 100% !important;
+            transition: all 0.2s !important;
+        }}"""
+
+    st.markdown(f"<style>{filter_css}</style>", unsafe_allow_html=True)
 
     btn_cols = st.columns(5)
     for i, key in enumerate(COMP_FILTER_KEYS):
+        color = COMP_FILTER_COLOR[key]
+        icon  = _filter_icon(key, color)
+        label = COMP_FILTER_NAMES[key]
         with btn_cols[i]:
-            is_active   = st.session_state.rul_filter == key
-            accent      = COMP_FILTER_COLOR[key]
-            border      = f"2px solid {accent}" if is_active else f"1px solid rgba(255,255,255,0.08)"
-            bg          = f"rgba({int(accent[1:3],16)},{int(accent[3:5],16)},{int(accent[5:7],16)},0.14)" if is_active else "rgba(255,255,255,0.03)"
-            glow        = f"0 0 16px {accent}55" if is_active else "none"
-            label_color = "#fff" if is_active else C_MUTED
-            fw          = "800" if is_active else "400"
-            if key == "all":
-                icon_html = f'<div style="font-size:22px; margin-bottom:4px;">🔧</div>'
-            else:
-                c1 = accent if is_active else C_MUTED
-                c2 = accent if is_active else C_MUTED
-                svg = COMP_SVG[key].replace("{c1}", c1).replace("{c2}", c2)
-                icon_html = f'<div style="margin-bottom:4px;">{svg}</div>'
+            st.markdown(
+                f'<div style="text-align:center; pointer-events:none; margin-bottom:-38px; padding-top:10px;">'
+                f'{icon}<br>'
+                f'<span style="font-size:11px; color:{color}; font-weight:600;">{label}</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            if st.button(" ", key=f"rul_btn_{key}", use_container_width=True):
+                st.session_state.rul_filter = key
+                st.rerun()
+
+    st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
             st.markdown(
                 f'<div style="position:relative; border:{border}; background:{bg}; '
                 f'border-radius:12px; padding:12px 6px; text-align:center; '
