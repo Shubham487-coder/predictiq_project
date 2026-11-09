@@ -896,87 +896,87 @@ if page == "Overview":
         no machine in the fleet is flagging that component right now."""
     )
 
-    COMP_SVG = {
-        "comp1": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="fan-g" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="{c1}"/>
-              <stop offset="100%" stop-color="{c2}"/>
-            </radialGradient>
-          </defs>
-          <circle cx="20" cy="20" r="18" fill="url(#fan-g)" opacity="0.15"/>
-          <circle cx="20" cy="20" r="4" fill="{c1}" opacity="0.9"/>
-          <path d="M20,16 C22,10 28,8 26,14 C24,18 22,19 20,20 Z" fill="{c1}" opacity="0.85"/>
-          <path d="M24,22 C30,20 32,26 26,26 C22,26 20,24 20,20 Z" fill="{c1}" opacity="0.70"/>
-          <path d="M18,24 C16,30 10,30 12,24 C14,20 17,19 20,20 Z" fill="{c1}" opacity="0.55"/>
-          <path d="M16,18 C10,16 10,10 16,13 C19,15 20,18 20,20 Z" fill="{c1}" opacity="0.70"/>
-          <circle cx="20" cy="20" r="3" fill="{c1}"/>
-        </svg>""",
-        "comp2": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="eng-g" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="{c1}"/>
-              <stop offset="100%" stop-color="{c2}"/>
-            </linearGradient>
-          </defs>
-          <rect x="6" y="14" width="28" height="12" rx="6" fill="url(#eng-g)" opacity="0.20"/>
-          <rect x="6" y="14" width="28" height="12" rx="6" fill="none" stroke="{c1}" stroke-width="1.2" opacity="0.7"/>
-          <ellipse cx="34" cy="20" rx="4" ry="6" fill="{c1}" opacity="0.25"/>
-          <ellipse cx="34" cy="20" rx="4" ry="6" fill="none" stroke="{c1}" stroke-width="1" opacity="0.6"/>
-          <ellipse cx="6" cy="20" rx="3" ry="5" fill="{c1}" opacity="0.15"/>
-          <line x1="12" y1="17" x2="12" y2="23" stroke="{c1}" stroke-width="1" opacity="0.5"/>
-          <line x1="18" y1="15" x2="18" y2="25" stroke="{c1}" stroke-width="1" opacity="0.5"/>
-          <line x1="24" y1="15" x2="24" y2="25" stroke="{c1}" stroke-width="1" opacity="0.5"/>
-          <line x1="30" y1="17" x2="30" y2="23" stroke="{c1}" stroke-width="1" opacity="0.5"/>
-        </svg>""",
-        "comp3": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="hpt-g" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="{c1}" stop-opacity="0.9"/>
-              <stop offset="100%" stop-color="{c2}" stop-opacity="0.3"/>
-            </radialGradient>
-          </defs>
-          <circle cx="20" cy="20" r="16" fill="url(#hpt-g)" opacity="0.15"/>
-          <circle cx="20" cy="20" r="16" fill="none" stroke="{c1}" stroke-width="1" opacity="0.4"/>
-          <circle cx="20" cy="20" r="5" fill="{c1}" opacity="0.8"/>
-          <circle cx="20" cy="20" r="5" fill="none" stroke="{c1}" stroke-width="0.5" opacity="0.5"/>
-          <path d="M20,15 L22,8 L20,10 L18,8 Z" fill="{c1}" opacity="0.8"/>
-          <path d="M25,20 L32,18 L30,20 L32,22 Z" fill="{c1}" opacity="0.8"/>
-          <path d="M20,25 L22,32 L20,30 L18,32 Z" fill="{c1}" opacity="0.8"/>
-          <path d="M15,20 L8,18 L10,20 L8,22 Z" fill="{c1}" opacity="0.8"/>
-          <path d="M23,13 L28,8 L27,11 L30,10 Z" fill="{c1}" opacity="0.6"/>
-          <path d="M27,23 L32,28 L29,27 L30,30 Z" fill="{c1}" opacity="0.6"/>
-          <path d="M17,27 L12,32 L13,29 L10,30 Z" fill="{c1}" opacity="0.6"/>
-          <path d="M13,17 L8,12 L11,13 L10,10 Z" fill="{c1}" opacity="0.6"/>
-        </svg>""",
-        "comp4": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="lpt-g" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="{c1}" stop-opacity="0.8"/>
-              <stop offset="100%" stop-color="{c2}" stop-opacity="0.2"/>
-            </radialGradient>
-          </defs>
-          <circle cx="20" cy="20" r="18" fill="url(#lpt-g)" opacity="0.12"/>
-          <circle cx="20" cy="20" r="18" fill="none" stroke="{c1}" stroke-width="0.8" opacity="0.35"/>
-          <circle cx="20" cy="20" r="10" fill="none" stroke="{c1}" stroke-width="0.8" opacity="0.25"/>
-          <circle cx="20" cy="20" r="4" fill="{c1}" opacity="0.7"/>
-          <path d="M20,16 L21,6 L20,9 L19,6 Z" fill="{c1}" opacity="0.75"/>
-          <path d="M24,20 L34,19 L31,20 L34,21 Z" fill="{c1}" opacity="0.75"/>
-          <path d="M20,24 L21,34 L20,31 L19,34 Z" fill="{c1}" opacity="0.75"/>
-          <path d="M16,20 L6,19 L9,20 L6,21 Z" fill="{c1}" opacity="0.75"/>
-          <path d="M22,14 L26,5 L25,9 L28,7 Z" fill="{c1}" opacity="0.55"/>
-          <path d="M26,22 L35,26 L31,24 L33,27 Z" fill="{c1}" opacity="0.55"/>
-          <path d="M18,26 L14,35 L15,31 L12,33 Z" fill="{c1}" opacity="0.55"/>
-          <path d="M14,18 L5,14 L9,16 L7,13 Z" fill="{c1}" opacity="0.55"/>
-        </svg>""",
-    }
+COMP_SVG = {
+    "comp1": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="fan-g" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="{c1}"/>
+          <stop offset="100%" stop-color="{c2}"/>
+        </radialGradient>
+      </defs>
+      <circle cx="20" cy="20" r="18" fill="url(#fan-g)" opacity="0.15"/>
+      <circle cx="20" cy="20" r="4" fill="{c1}" opacity="0.9"/>
+      <path d="M20,16 C22,10 28,8 26,14 C24,18 22,19 20,20 Z" fill="{c1}" opacity="0.85"/>
+      <path d="M24,22 C30,20 32,26 26,26 C22,26 20,24 20,20 Z" fill="{c1}" opacity="0.70"/>
+      <path d="M18,24 C16,30 10,30 12,24 C14,20 17,19 20,20 Z" fill="{c1}" opacity="0.55"/>
+      <path d="M16,18 C10,16 10,10 16,13 C19,15 20,18 20,20 Z" fill="{c1}" opacity="0.70"/>
+      <circle cx="20" cy="20" r="3" fill="{c1}"/>
+    </svg>""",
+    "comp2": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="eng-g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="{c1}"/>
+          <stop offset="100%" stop-color="{c2}"/>
+        </linearGradient>
+      </defs>
+      <rect x="6" y="14" width="28" height="12" rx="6" fill="url(#eng-g)" opacity="0.20"/>
+      <rect x="6" y="14" width="28" height="12" rx="6" fill="none" stroke="{c1}" stroke-width="1.2" opacity="0.7"/>
+      <ellipse cx="34" cy="20" rx="4" ry="6" fill="{c1}" opacity="0.25"/>
+      <ellipse cx="34" cy="20" rx="4" ry="6" fill="none" stroke="{c1}" stroke-width="1" opacity="0.6"/>
+      <ellipse cx="6" cy="20" rx="3" ry="5" fill="{c1}" opacity="0.15"/>
+      <line x1="12" y1="17" x2="12" y2="23" stroke="{c1}" stroke-width="1" opacity="0.5"/>
+      <line x1="18" y1="15" x2="18" y2="25" stroke="{c1}" stroke-width="1" opacity="0.5"/>
+      <line x1="24" y1="15" x2="24" y2="25" stroke="{c1}" stroke-width="1" opacity="0.5"/>
+      <line x1="30" y1="17" x2="30" y2="23" stroke="{c1}" stroke-width="1" opacity="0.5"/>
+    </svg>""",
+    "comp3": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="hpt-g" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="{c1}" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="{c2}" stop-opacity="0.3"/>
+        </radialGradient>
+      </defs>
+      <circle cx="20" cy="20" r="16" fill="url(#hpt-g)" opacity="0.15"/>
+      <circle cx="20" cy="20" r="16" fill="none" stroke="{c1}" stroke-width="1" opacity="0.4"/>
+      <circle cx="20" cy="20" r="5" fill="{c1}" opacity="0.8"/>
+      <circle cx="20" cy="20" r="5" fill="none" stroke="{c1}" stroke-width="0.5" opacity="0.5"/>
+      <path d="M20,15 L22,8 L20,10 L18,8 Z" fill="{c1}" opacity="0.8"/>
+      <path d="M25,20 L32,18 L30,20 L32,22 Z" fill="{c1}" opacity="0.8"/>
+      <path d="M20,25 L22,32 L20,30 L18,32 Z" fill="{c1}" opacity="0.8"/>
+      <path d="M15,20 L8,18 L10,20 L8,22 Z" fill="{c1}" opacity="0.8"/>
+      <path d="M23,13 L28,8 L27,11 L30,10 Z" fill="{c1}" opacity="0.6"/>
+      <path d="M27,23 L32,28 L29,27 L30,30 Z" fill="{c1}" opacity="0.6"/>
+      <path d="M17,27 L12,32 L13,29 L10,30 Z" fill="{c1}" opacity="0.6"/>
+      <path d="M13,17 L8,12 L11,13 L10,10 Z" fill="{c1}" opacity="0.6"/>
+    </svg>""",
+    "comp4": """<svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="lpt-g" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="{c1}" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="{c2}" stop-opacity="0.2"/>
+        </radialGradient>
+      </defs>
+      <circle cx="20" cy="20" r="18" fill="url(#lpt-g)" opacity="0.12"/>
+      <circle cx="20" cy="20" r="18" fill="none" stroke="{c1}" stroke-width="0.8" opacity="0.35"/>
+      <circle cx="20" cy="20" r="10" fill="none" stroke="{c1}" stroke-width="0.8" opacity="0.25"/>
+      <circle cx="20" cy="20" r="4" fill="{c1}" opacity="0.7"/>
+      <path d="M20,16 L21,6 L20,9 L19,6 Z" fill="{c1}" opacity="0.75"/>
+      <path d="M24,20 L34,19 L31,20 L34,21 Z" fill="{c1}" opacity="0.75"/>
+      <path d="M20,24 L21,34 L20,31 L19,34 Z" fill="{c1}" opacity="0.75"/>
+      <path d="M16,20 L6,19 L9,20 L6,21 Z" fill="{c1}" opacity="0.75"/>
+      <path d="M22,14 L26,5 L25,9 L28,7 Z" fill="{c1}" opacity="0.55"/>
+      <path d="M26,22 L35,26 L31,24 L33,27 Z" fill="{c1}" opacity="0.55"/>
+      <path d="M18,26 L14,35 L15,31 L12,33 Z" fill="{c1}" opacity="0.55"/>
+      <path d="M14,18 L5,14 L9,16 L7,13 Z" fill="{c1}" opacity="0.55"/>
+    </svg>""",
+}
 
-    COMP_LABEL = {
-        "comp1": "Fan",
-        "comp2": "Core Engine",
-        "comp3": "HP Turbine",
-        "comp4": "LP Turbine",
-    }
+COMP_LABEL = {
+    "comp1": "Fan",
+    "comp2": "Core Engine",
+    "comp3": "HP Turbine",
+    "comp4": "LP Turbine",
+}
 
 
     def make_tag(machine_id, severity, comp_key):
