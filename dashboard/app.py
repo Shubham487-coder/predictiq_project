@@ -1200,21 +1200,7 @@ elif page == "RUL Explorer":
                 st.rerun()
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
-            st.markdown(
-                f'<div style="position:relative; border:{border}; background:{bg}; '
-                f'border-radius:12px; padding:12px 6px; text-align:center; '
-                f'box-shadow:{glow}; transition:all 0.2s;">'
-                f'{icon_html}'
-                f'<div style="font-size:11px; font-weight:{fw}; color:{label_color};">'
-                f'{COMP_FILTER_NAMES[key]}</div></div>',
-                unsafe_allow_html=True,
-            )
-            if st.button("", key=f"rul_btn_{key}", use_container_width=True,
-                         help=COMP_FILTER_NAMES[key]):
-                st.session_state.rul_filter = key
-                st.rerun()
-
-    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
+            
 
     # ── Filter data ───────────────────────────────────────────────────────────
     rul_filtered = rul.copy()
