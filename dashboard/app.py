@@ -698,7 +698,7 @@ def render_sidebar():
 
     st.session_state.page = st.radio(
         "nav",
-        ["Overview", "Machine Detail", "Alerts"],
+        ["Overview", "RUL Explorer", "Machine Detail", "Alerts"],
         label_visibility="collapsed",
     )
 
@@ -1100,7 +1100,164 @@ if page == "Overview":
             st.markdown(rows, unsafe_allow_html=True)
 
     # RUL histogram
+# ═══════════════════════════════════════════════════════════════════════════════
+# PAGE 2 — RUL EXPLORER
+# ═══════════════════════════════════════════════════════════════════════════════
 
+elif page == "RUL Explorer":
+
+    RUL_LABEL = {
+        "CRITICAL": "REPLACE NOW",
+        "URGENT":   "INSPECT SOON",
+        "MONITOR":  "MONITOR",
+        "HEALTHY":  "RUNNING OK",
+    }
+    RUL_COLOR = {
+        "CRITICAL": C_RED,
+        "URGENT":   C_AMBER,
+        "MONITOR":  C_CYAN,
+        "HEALTHY":  C_GREEN,
+    }
+    RUL_ORDER = ["CRITICAL", "URGENT", "MONITOR", "HEALTHY"]
+
+    st.markdown(
+        f'<h1 style="margin:0 0 4px; font-size:25px; color:#fff; '
+        f'text-shadow:0 0 22px rgba(47,140,255,0.28);">RUL Explorer</h1>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f'<div style="font-size:13px; color:{C_MUTED}; margin-bottom:20px;">'
+        f'Remaining Useful Life — how long before each component needs replacement</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── Component filter ──────────────────────────────────────────────────────
+    COMP_FILTER_KEYS  = ["all", "comp1", "comp2", "comp3", "comp4"]
+    COMP_FILTER_NAMES = {
+        "all":   "All Components",
+        "comp1": "Fan",
+        "comp2": "Core Engine",
+        "comp3": "HP Turbine",
+        "comp4": "LP Turbine",
+    }
+
+    COMP_SVG_SMALL = {
+        "comp1": """<svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="4" fill="currentColor" opacity="0.9"/>
+          <path d="M20,16 C22,10 28,8 26,14 C24,18 22,19 20,20 Z" fill="currentColor" opacity="0.85"/>
+          <path d="M24,22 C30,20 32,26 26,26 C22,26 20,24 20,20 Z" fill="currentColor" opacity="0.70"/>
+          <path d="M18,24 C16,30 10,30 12,24 C14,20 17,19 20,20 Z" fill="currentColor" opacity="0.55"/>
+          <path d="M16,18 C10,16 10,10 16,13 C19,15 20,18 20,20 Z" fill="currentColor" opacity="0.70"/>
+          <circle cx="20" cy="20" r="3" fill="currentColor"/>
+        </svg>""",
+        "comp2": """<svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="14" width="28" height="12" rx="6" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+          <ellipse cx="34" cy="20" rx="4" ry="6" fill="none" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+          <line x1="12" y1="17" x2="12" y2="23" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          <line x1="18" y1="15" x2="18" y2="25" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          <line x1="24" y1="15" x2="24" y2="25" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+          <line x1="30" y1="17" x2="30" y2="23" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+        </svg>""",
+        "comp3": """<svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4"/>
+          <circle cx="20" cy="20" r="5" fill="currentColor" opacity="0.8"/>
+          <path d="M20,15 L22,8 L20,10 L18,8 Z" fill="currentColor" opacity="0.8"/>
+          <path d="M25,20 L32,18 L30,20 L32,22 Z" fill="currentColor" opacity="0.8"/>
+          <path d="M20,25 L22,32 L20,30 L18,32 Z" fill="currentColor" opacity="0.8"/>
+          <path d="M15,20 L8,18 L10,20 L8,22 Z" fill="currentColor" opacity="0.8"/>
+        </svg>""",
+        "comp4": """<svg viewBox="0 0 40 40" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.35"/>
+          <circle cx="20" cy="20" r="10" fill="none" stroke="currentColor" stroke-width="0.8" opacity="0.25"/>
+          <circle cx="20" cy="20" r="4" fill="currentColor" opacity="0.7"/>
+          <path d="M20,16 L21,6 L20,9 L19,6 Z" fill="currentColor" opacity="0.75"/>
+          <path d="M24,20 L34,19 L31,20 L34,21 Z" fill="currentColor" opacity="0.75"/>
+          <path d="M20,24 L21,34 L20,31 L19,34 Z" fill="currentColor" opacity="0.75"/>
+          <path d="M16,20 L6,19 L9,20 L6,21 Z" fill="currentColor" opacity="0.75"/>
+        </svg>""",
+    }
+
+    if "rul_filter" not in st.session_state:
+        st.session_state.rul_filter = "all"
+
+    # Render icon+label filter buttons
+    btn_cols = st.columns(5)
+    for i, key in enumerate(COMP_FILTER_KEYS):
+        with btn_cols[i]:
+            is_active = st.session_state.rul_filter == key
+            border    = f"2px solid {C_CYAN}" if is_active else "1px solid rgba(23,216,139,0.15)"
+            bg        = "rgba(47,140,255,0.12)" if is_active else "rgba(255,255,255,0.03)"
+            icon_html = f'<div style="margin-bottom:4px; color:{C_CYAN if is_active else C_MUTED};">{COMP_SVG_SMALL[key]}</div>' if key != "all" else f'<div style="font-size:18px; margin-bottom:4px;">🔧</div>'
+            label_color = "#fff" if is_active else C_MUTED
+            st.markdown(
+                f'<div style="border:{border}; background:{bg}; border-radius:10px; '
+                f'padding:10px 6px; text-align:center; cursor:pointer;">'
+                f'{icon_html}'
+                f'<div style="font-size:11px; font-weight:{"700" if is_active else "400"}; color:{label_color};">'
+                f'{COMP_FILTER_NAMES[key]}</div></div>',
+                unsafe_allow_html=True,
+            )
+            if st.button("", key=f"rul_btn_{key}", use_container_width=True,
+                         help=COMP_FILTER_NAMES[key]):
+                st.session_state.rul_filter = key
+                st.rerun()
+
+    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
+
+    # ── Filter data ───────────────────────────────────────────────────────────
+    rul_filtered = rul.copy()
+    if st.session_state.rul_filter != "all":
+        rul_filtered = rul_filtered[rul_filtered["component"] == st.session_state.rul_filter]
+
+    # ── Summary line ──────────────────────────────────────────────────────────
+    n_replace = (rul_filtered["interpretation"] == "CRITICAL").sum()
+    n_inspect = (rul_filtered["interpretation"] == "URGENT").sum()
+    n_total_f = len(rul_filtered)
+    summary_parts = []
+    if n_replace: summary_parts.append(f'<span style="color:{C_RED}; font-weight:700;">{n_replace} REPLACE NOW</span>')
+    if n_inspect: summary_parts.append(f'<span style="color:{C_AMBER}; font-weight:700;">{n_inspect} INSPECT SOON</span>')
+    if not summary_parts:
+        summary_html = f'<span style="color:{C_GREEN}; font-weight:700;">All {n_total_f} components running OK</span>'
+    else:
+        summary_html = " · ".join(summary_parts) + f' <span style="color:{C_MUTED};">out of {n_total_f} components</span>'
+
+    st.markdown(
+        f'<div style="font-size:13px; margin-bottom:12px;">{summary_html}</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── Histogram ─────────────────────────────────────────────────────────────
+    fig = px.histogram(
+        rul_filtered,
+        x="predicted_rul_hours",
+        nbins=30,
+        color="interpretation",
+        color_discrete_map={k: RUL_COLOR[k] for k in RUL_ORDER},
+        category_orders={"interpretation": RUL_ORDER},
+        labels={"predicted_rul_hours": "Remaining Useful Life (hours)", "interpretation": "Status"},
+    )
+    # Rename legend labels
+    for trace in fig.data:
+        trace.name = RUL_LABEL.get(trace.name, trace.name)
+
+    # Vertical zone lines
+    for hrs, label, clr in [(24, "24h", C_RED), (48, "48h", C_AMBER), (72, "72h", C_CYAN)]:
+        fig.add_vline(x=hrs, line_dash="dot", line_color=clr, line_width=1, opacity=0.5,
+                      annotation_text=label, annotation_font_color=clr,
+                      annotation_font_size=10, annotation_position="top")
+
+    fig.update_layout(
+        **PLOTLY_THEME, height=320,
+        margin=dict(l=20, r=20, t=20, b=40),
+        bargap=0.04,
+        legend=dict(font_color=C_MUTED, bgcolor="rgba(0,0,0,0)", orientation="h",
+                    yanchor="bottom", y=1.02, xanchor="right", x=1),
+        xaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED,
+                   title_font_color=C_MUTED, range=[0, 102]),
+        yaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED,
+                   title="Components", title_font_color=C_MUTED),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
