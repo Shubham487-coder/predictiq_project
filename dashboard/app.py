@@ -1141,27 +1141,42 @@ elif page == "RUL Explorer":
     COMP_FILTER_KEYS  = ["all", "comp1", "comp2", "comp3", "comp4"]
     COMP_FILTER_NAMES = {"all": "All Components", "comp1": "Fan",
                          "comp2": "Core Engine", "comp3": "HP Turbine", "comp4": "LP Turbine"}
+    COMP_FILTER_COLOR = {"all": C_CYAN, "comp1": "#2f8cff",
+                         "comp2": "#ff6b35", "comp3": "#c97aff", "comp4": C_CYAN}
 
     if "rul_filter" not in st.session_state:
         st.session_state.rul_filter = "all"
+
+    # Hide the transparent overlay buttons
+    st.markdown("""
+    <style>
+    div[data-testid="stButton"] > button {
+        position:absolute; top:0; left:0; width:100%; height:100%;
+        opacity:0; cursor:pointer; border:none; background:transparent;
+    }
+    </style>""", unsafe_allow_html=True)
 
     btn_cols = st.columns(5)
     for i, key in enumerate(COMP_FILTER_KEYS):
         with btn_cols[i]:
             is_active   = st.session_state.rul_filter == key
-            border      = f"2px solid {C_CYAN}" if is_active else f"1px solid rgba(23,216,139,0.15)"
-            bg          = "rgba(47,140,255,0.12)" if is_active else "rgba(255,255,255,0.03)"
+            accent      = COMP_FILTER_COLOR[key]
+            border      = f"2px solid {accent}" if is_active else f"1px solid rgba(255,255,255,0.08)"
+            bg          = f"rgba({int(accent[1:3],16)},{int(accent[3:5],16)},{int(accent[5:7],16)},0.14)" if is_active else "rgba(255,255,255,0.03)"
+            glow        = f"0 0 16px {accent}55" if is_active else "none"
             label_color = "#fff" if is_active else C_MUTED
-            fw          = "700" if is_active else "400"
+            fw          = "800" if is_active else "400"
             if key == "all":
-                icon_html = f'<div style="font-size:18px; margin-bottom:4px;">🔧</div>'
+                icon_html = f'<div style="font-size:22px; margin-bottom:4px;">🔧</div>'
             else:
-                icon_color = C_CYAN if is_active else C_MUTED
-                svg = COMP_SVG[key].replace("{c1}", icon_color).replace("{c2}", icon_color)
+                c1 = accent if is_active else C_MUTED
+                c2 = accent if is_active else C_MUTED
+                svg = COMP_SVG[key].replace("{c1}", c1).replace("{c2}", c2)
                 icon_html = f'<div style="margin-bottom:4px;">{svg}</div>'
             st.markdown(
-                f'<div style="border:{border}; background:{bg}; border-radius:10px; '
-                f'padding:10px 6px; text-align:center;">'
+                f'<div style="position:relative; border:{border}; background:{bg}; '
+                f'border-radius:12px; padding:12px 6px; text-align:center; '
+                f'box-shadow:{glow}; transition:all 0.2s;">'
                 f'{icon_html}'
                 f'<div style="font-size:11px; font-weight:{fw}; color:{label_color};">'
                 f'{COMP_FILTER_NAMES[key]}</div></div>',
