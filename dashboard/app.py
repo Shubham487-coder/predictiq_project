@@ -698,7 +698,7 @@ def render_sidebar():
 
     st.session_state.page = st.radio(
         "nav",
-        ["Overview", "Machine Detail", "Alerts"],
+        ["Overview", "RUL Explorer", "Alerts"],
         label_visibility="collapsed",
     )
 
@@ -1107,172 +1107,136 @@ if page == "Overview":
 # PAGE 2 — MACHINE DETAIL
 # ═══════════════════════════════════════════════════════════════════════════════
 
-elif page == "Machine Detail":
-    machine_ids = sorted(clf["machine_id"].unique().tolist())
+elif page == "RUL Explorer":
 
-    col_h, col_s = st.columns([3,1])
-    with col_h:
-        st.markdown(f'<h1 style="margin:0 0 4px; font-size:25px; color:#fff; text-shadow:0 0 22px rgba(47,140,255,0.28);">Machine Detail</h1>', unsafe_allow_html=True)
-    with col_s:
-        selected_id = st.selectbox("Machine", machine_ids, label_visibility="collapsed")
+    RUL_LABEL = {
+        "CRITICAL": "REPLACE NOW",
+        "URGENT":   "INSPECT SOON",
+        "MONITOR":  "MONITOR",
+        "HEALTHY":  "RUNNING OK",
+    }
+    RUL_COLOR = {
+        "CRITICAL": C_RED,
+        "URGENT":   C_AMBER,
+        "MONITOR":  C_CYAN,
+        "HEALTHY":  C_GREEN,
+    }
+    RUL_ORDER = ["CRITICAL", "URGENT", "MONITOR", "HEALTHY"]
 
-    machine_clf = clf[clf["machine_id"] == selected_id].iloc[0]
-    machine_rul = rul[rul["machine_id"] == selected_id].sort_values("component")
-
-    status  = machine_clf["overall_status"]
-    color   = STATUS_COLOR.get(status, C_INK)
-    glow    = f"0 0 28px {color}44"
-
-    prio_int = int(machine_clf['priority'])
-    st.markdown(f"""
-    <div class="metric-card" style="border-color:{color}55; box-shadow:{glow}; margin-bottom:20px;">
-        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-            <div style="font-size:34px; font-weight:900; color:{color};
-                        text-shadow:0 0 22px {color}66;">M{selected_id:03d}</div>
-            <div>
-                <div style="font-size:11px; color:{C_MUTED}; text-transform:uppercase;
-                            letter-spacing:0.1em;">Overall Status</div>
-                <div style="font-size:20px; font-weight:800; color:{color};">{status}</div>
-                <div style="font-size:11px; color:{C_MUTED}; margin-top:3px;">{STATUS_DESC.get(status,"")}</div>
-            </div>
-            <div style="margin-left:auto; text-align:right;">
-                <div style="font-size:11px; color:{C_MUTED}; text-transform:uppercase;
-                            letter-spacing:0.1em;">Repair Priority</div>
-                <div style="font-size:20px; font-weight:800; color:{C_CYAN};">#{prio_int}</div>
-                <div style="font-size:11px; color:{C_MUTED}; margin-top:3px;">{PRIORITY_DESC.get(prio_int,"")}</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Component cards
-    st.markdown('<div class="section-title">Component Health Breakdown</div>', unsafe_allow_html=True)
-    info_box(
-        "How do I read these component cards?",
-        f"""Each card represents one of the <b>4 monitored components</b> on this engine. Here's what each number means:<br><br>
-        🔴 <b>⚠ ALERT badge</b> — This component has crossed the failure threshold. It needs to be inspected or replaced as soon as possible.<br><br>
-        📊 <b>Failure Probability (%)</b> — This is the ML model's confidence that this component will fail in the near future, expressed as a percentage.<br>
-        &nbsp;&nbsp;&nbsp;• 0–30% = Healthy, no concern<br>
-        &nbsp;&nbsp;&nbsp;• 30–50% = Early warning, monitor closely<br>
-        &nbsp;&nbsp;&nbsp;• 50–100% = Alert — schedule maintenance<br>
-        &nbsp;&nbsp;&nbsp;• 100% = The model is certain failure is imminent<br><br>
-        ⏱ <b>Remaining Useful Life (hours)</b> — How many hours this component is predicted to last before it requires maintenance, based on its current degradation pattern. This is calculated by a separate regression model trained on historical failure data.<br><br>
-        📅 <b>Day estimate · Outlook</b> — A human-readable translation of the RUL hours into days (e.g. "3–7 days"), and the overall outlook (URGENT / MONITOR / HEALTHY).<br><br>
-        <b>What to do:</b> Any component showing an alert badge or above 50% failure probability should be scheduled for maintenance. Start with the component showing the lowest RUL hours."""
+    st.markdown(
+        f'<h1 style="margin:0 0 4px; font-size:25px; color:#fff; '
+        f'text-shadow:0 0 22px rgba(47,140,255,0.28);">RUL Explorer</h1>',
+        unsafe_allow_html=True,
     )
-    cols = st.columns(4)
-    for i, (_, crow) in enumerate(machine_rul.iterrows()):
-        comp      = crow["component"]
-        comp_name = COMP_NAMES.get(comp, comp)
-        rul_h     = crow["predicted_rul_hours"]
-        interp    = crow["interpretation"]
-        day_label = crow["day_label"]
-        prob      = machine_clf[f"{comp}_prob"]
-        cstatus   = machine_clf[f"{comp}_status"]
-        alert     = machine_clf[f"{comp}_alert"]
-        c         = STATUS_COLOR.get(cstatus, C_INK)
-        alert_tag = '<span style="font-size:10px; background:rgba(255,59,78,0.2); color:#ff3b4e; border-radius:4px; padding:1px 6px; margin-left:4px;">⚠ ALERT</span>' if alert else ""
+    st.markdown(
+        f'<div style="font-size:13px; color:{C_MUTED}; margin-bottom:20px;">'
+        f'Remaining Useful Life — how long before each component needs replacement</div>',
+        unsafe_allow_html=True,
+    )
 
-        with cols[i]:
-            card_html = (
-                f'<div class="metric-card" style="border-color:{c}55; box-shadow:0 0 20px {c}22;">'
-                f'<div style="font-size:13px; font-weight:850; color:{c}; letter-spacing:0.04em; margin-bottom:4px;">{comp_name}{alert_tag}</div>'
-                f'<div style="font-size:10px; color:{C_MUTED}; margin-bottom:10px;">{cstatus}</div>'
-                f'<div style="font-size:10px; color:{C_MUTED}; margin-bottom:2px;">Failure Probability</div>'
-                f'<div style="font-size:24px; font-weight:800; color:{c}; text-shadow:0 0 16px {c}55; margin-bottom:2px;">{prob*100:.1f}%</div>'
-                f'<div style="font-size:10px; color:{C_MUTED}; margin-bottom:10px;">Chance this part fails soon</div>'
-                f'<div style="font-size:10px; color:{C_MUTED}; margin-bottom:2px;">Remaining Useful Life</div>'
-                f'<div style="font-size:20px; font-weight:700; color:{C_INK}; margin-bottom:2px;">{rul_h:.1f} hours</div>'
-                f'<div style="font-size:10px; color:{C_MUTED};">&asymp; {day_label} &middot; {interp}</div>'
-                f'</div>'
+    # ── Component filter pills ────────────────────────────────────────────────
+    COMP_FILTER_KEYS  = ["all", "comp1", "comp2", "comp3", "comp4"]
+    COMP_FILTER_NAMES = {"all": "All Components", "comp1": "Fan",
+                         "comp2": "Core Engine", "comp3": "HP Turbine", "comp4": "LP Turbine"}
+
+    if "rul_filter" not in st.session_state:
+        st.session_state.rul_filter = "all"
+
+    btn_cols = st.columns(5)
+    for i, key in enumerate(COMP_FILTER_KEYS):
+        with btn_cols[i]:
+            is_active   = st.session_state.rul_filter == key
+            border      = f"2px solid {C_CYAN}" if is_active else f"1px solid rgba(23,216,139,0.15)"
+            bg          = "rgba(47,140,255,0.12)" if is_active else "rgba(255,255,255,0.03)"
+            label_color = "#fff" if is_active else C_MUTED
+            fw          = "700" if is_active else "400"
+            if key == "all":
+                icon_html = f'<div style="font-size:18px; margin-bottom:4px;">🔧</div>'
+            else:
+                icon_color = C_CYAN if is_active else C_MUTED
+                svg = COMP_SVG[key].replace("{c1}", icon_color).replace("{c2}", icon_color)
+                icon_html = f'<div style="margin-bottom:4px;">{svg}</div>'
+            st.markdown(
+                f'<div style="border:{border}; background:{bg}; border-radius:10px; '
+                f'padding:10px 6px; text-align:center;">'
+                f'{icon_html}'
+                f'<div style="font-size:11px; font-weight:{fw}; color:{label_color};">'
+                f'{COMP_FILTER_NAMES[key]}</div></div>',
+                unsafe_allow_html=True,
             )
-            st.markdown(card_html, unsafe_allow_html=True)
+            if st.button("", key=f"rul_btn_{key}", use_container_width=True,
+                         help=COMP_FILTER_NAMES[key]):
+                st.session_state.rul_filter = key
+                st.rerun()
 
-    col_l, col_r = st.columns(2)
+    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
 
-    with col_l:
-        st.markdown('<div class="section-title">Remaining Useful Life by Component</div>', unsafe_allow_html=True)
-        info_box(
-            "What does this chart show?",
-            f"""This bar chart shows the <b>Remaining Useful Life (RUL) for each of the 4 components</b> on this specific machine, in hours.<br><br>
-            <b>The dotted blue line at 72 hours</b> represents the 3-day maintenance threshold — any component whose bar falls below this line should be scheduled for inspection or replacement within 3 days.<br><br>
-            <b>Bar colours:</b><br>
-            🔴 <span style="color:{C_RED};">Red</span> — URGENT: below the threshold, act immediately<br>
-            🟡 <span style="color:{C_AMBER};">Amber</span> — MONITOR: approaching the threshold, plan maintenance<br>
-            🟢 <span style="color:{C_GREEN};">Green</span> — HEALTHY: plenty of life remaining<br><br>
-            <b>How to use this:</b> The shortest bar tells you which component to replace first and sets the deadline for this machine's next maintenance visit."""
-        )
-        interps    = machine_rul["interpretation"].tolist()
-        comp_labels = [COMP_NAMES.get(c, c) for c in machine_rul["component"].tolist()]
-        bar_colors = [C_RED if i=="URGENT" else C_AMBER if i=="MONITOR" else C_GREEN for i in interps]
-        fig_rul = plotly_bar(
-            machine_rul["predicted_rul_hours"].tolist(),
-            comp_labels,
-            bar_colors, yaxis_title="Hours Remaining",
-        )
-        fig_rul.add_hline(y=72, line_dash="dot", line_color=C_BLUE,
-                          annotation_text="3-day threshold", annotation_font_color=C_BLUE)
-        st.plotly_chart(fig_rul, use_container_width=True)
+    # ── Filter data ───────────────────────────────────────────────────────────
+    rul_filtered = rul.copy()
+    if st.session_state.rul_filter != "all":
+        rul_filtered = rul_filtered[rul_filtered["component"] == st.session_state.rul_filter]
 
-    with col_r:
-        st.markdown('<div class="section-title">Failure Probability by Component</div>', unsafe_allow_html=True)
-        info_box(
-            "What does this chart show?",
-            f"""This bar chart shows the <b>failure probability for each component</b> on this machine, as predicted by the ML classifier model.<br><br>
-            <b>What is failure probability?</b><br>
-            The model analyses the machine's recent sensor readings (voltage, rotation, pressure, vibration) and compares them to historical patterns seen before past failures. It outputs a probability between 0% and 100% for each component.<br><br>
-            <b>The threshold lines:</b><br>
-            🔴 <b style="color:{C_RED};">Red dotted line at 50%</b> — This is the <b>alert threshold</b>. Any component above this line has triggered an active alert and needs maintenance.<br>
-            🟡 <b style="color:{C_AMBER};">Amber dotted line at 30%</b> — This is the <b>monitor threshold</b>. Components between 30–50% are showing early degradation signs and should be watched closely.<br><br>
-            <b>How to use this:</b> Components above the red line need action now. Components between the two lines should be re-checked at the next scheduled inspection."""
-        )
-        prob_vals  = [machine_clf[f"{c}_prob"]*100 for c in COMP_KEYS]
-        prob_color = [C_RED if v>50 else C_AMBER if v>30 else C_GREEN for v in prob_vals]
-        fig_prob   = plotly_bar(prob_vals, [COMP_NAMES[c] for c in COMP_KEYS],
-                                prob_color, yaxis_title="Failure Probability (%)")
-        fig_prob.add_hline(y=50, line_dash="dot", line_color=C_RED,
-                           annotation_text="Alert threshold (50%)", annotation_font_color=C_RED)
-        fig_prob.add_hline(y=30, line_dash="dot", line_color=C_AMBER,
-                           annotation_text="Monitor threshold (30%)", annotation_font_color=C_AMBER)
-        st.plotly_chart(fig_prob, use_container_width=True)
+    # ── Summary line ──────────────────────────────────────────────────────────
+    n_replace  = (rul_filtered["interpretation"] == "CRITICAL").sum()
+    n_inspect  = (rul_filtered["interpretation"] == "URGENT").sum()
+    n_total_f  = len(rul_filtered)
+    summary_parts = []
+    if n_replace:
+        summary_parts.append(f'<span style="color:{C_RED}; font-weight:700;">{n_replace} REPLACE NOW</span>')
+    if n_inspect:
+        summary_parts.append(f'<span style="color:{C_AMBER}; font-weight:700;">{n_inspect} INSPECT SOON</span>')
+    if not summary_parts:
+        summary_html = f'<span style="color:{C_GREEN}; font-weight:700;">All {n_total_f} components running OK</span>'
+    else:
+        summary_html = " · ".join(summary_parts) + f' <span style="color:{C_MUTED};">out of {n_total_f} components</span>'
+    st.markdown(
+        f'<div style="font-size:13px; margin-bottom:12px;">{summary_html}</div>',
+        unsafe_allow_html=True,
+    )
 
-    # Fleet box comparison
-    st.markdown('<div class="section-title">How This Machine Compares to the Fleet</div>', unsafe_allow_html=True)
     info_box(
-        "What does this chart show?",
-        f"""This chart puts the selected machine <b>in context of the entire fleet</b> — so you can see whether this machine is unusually bad or just average.<br><br>
-        <b>The blue box (box plot)</b> represents the spread of Remaining Useful Life across <i>all</i> {n_total} engines in the fleet:<br>
-        &nbsp;&nbsp;&nbsp;• The <b>middle line</b> in the box = the median RUL (half the fleet is above this, half below)<br>
-        &nbsp;&nbsp;&nbsp;• The <b>box edges</b> = the middle 50% of all machines<br>
-        &nbsp;&nbsp;&nbsp;• The <b>whiskers</b> = the full range, excluding outliers<br><br>
-        <b>The coloured diamond markers</b> show where THIS machine's individual components sit within that fleet range:<br>
-        🔴 <span style="color:{C_RED};">Red diamond</span> — This component is in URGENT territory<br>
-        🟡 <span style="color:{C_AMBER};">Amber diamond</span> — This component is being monitored<br>
-        🟢 <span style="color:{C_GREEN};">Green diamond</span> — This component is healthy<br><br>
-        <b>How to use this:</b> If a diamond sits <b>below the bottom of the box</b>, this machine's component is performing significantly worse than the rest of the fleet and warrants priority attention."""
+        "How to read this chart?",
+        f"""This histogram shows the <b>Remaining Useful Life (RUL)</b> distribution across components in the fleet.<br><br>
+        Each bar = a group of components with similar hours remaining before maintenance is needed.<br><br>
+        <span style="color:{C_RED};">■ REPLACE NOW</span> — under 24 hours — act immediately<br>
+        <span style="color:{C_AMBER};">■ INSPECT SOON</span> — 24–48 hours — schedule within 2 days<br>
+        <span style="color:{C_CYAN};">■ MONITOR</span> — 48–72 hours — watch closely<br>
+        <span style="color:{C_GREEN};">■ RUNNING OK</span> — over 72 hours — no action needed<br><br>
+        Use the component buttons above to filter by Fan, Core Engine, HP Turbine or LP Turbine."""
     )
-    fig_box = go.Figure()
-    fig_box.add_trace(go.Box(
-        y=rul["predicted_rul_hours"], name="All Engines",
-        marker_color=C_BLUE, line_color=C_BLUE,
-        fillcolor="rgba(47,140,255,0.08)",
-    ))
-    for _, r in machine_rul.iterrows():
-        c = C_RED if r["interpretation"]=="URGENT" else C_AMBER if r["interpretation"]=="MONITOR" else C_GREEN
-        fig_box.add_trace(go.Scatter(
-            x=["All Engines"], y=[r["predicted_rul_hours"]],
-            mode="markers", name=COMP_NAMES.get(r["component"], r["component"]),
-            marker=dict(size=13, color=c, symbol="diamond",
-                        line=dict(width=2, color=C_BG)),
-        ))
-    fig_box.update_layout(
-        **PLOTLY_THEME, height=300,
-        margin=dict(l=20,r=20,t=20,b=20),
-        yaxis=dict(title="Remaining Useful Life (hours)", gridcolor=C_LINE, tickfont_color=C_MUTED),
-        xaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED),
-        legend=dict(font_color=C_MUTED, bgcolor="rgba(0,0,0,0)"),
+
+    # ── Histogram ─────────────────────────────────────────────────────────────
+    fig = px.histogram(
+        rul_filtered,
+        x="predicted_rul_hours",
+        nbins=30,
+        color="interpretation",
+        color_discrete_map={k: RUL_COLOR[k] for k in RUL_ORDER},
+        category_orders={"interpretation": RUL_ORDER},
+        labels={"predicted_rul_hours": "Remaining Useful Life (hours)", "interpretation": "Status"},
     )
-    st.plotly_chart(fig_box, use_container_width=True)
+    for trace in fig.data:
+        trace.name = RUL_LABEL.get(trace.name, trace.name)
+
+    for hrs, label, clr in [(24, "24h — Replace Now", C_RED),
+                             (48, "48h — Inspect Soon", C_AMBER),
+                             (72, "72h — Monitor", C_CYAN)]:
+        fig.add_vline(x=hrs, line_dash="dot", line_color=clr, line_width=1.5, opacity=0.6,
+                      annotation_text=label, annotation_font_color=clr,
+                      annotation_font_size=10, annotation_position="top")
+
+    fig.update_layout(
+        **PLOTLY_THEME, height=360,
+        margin=dict(l=20, r=20, t=30, b=40),
+        bargap=0.04,
+        legend=dict(font_color=C_MUTED, bgcolor="rgba(0,0,0,0)", orientation="h",
+                    yanchor="bottom", y=1.02, xanchor="right", x=1),
+        xaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED,
+                   title_font_color=C_MUTED, range=[0, 102]),
+        yaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED,
+                   title="Number of Components", title_font_color=C_MUTED),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
