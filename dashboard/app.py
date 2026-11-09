@@ -1147,8 +1147,18 @@ elif page == "RUL Explorer":
     if "rul_filter" not in st.session_state:
         st.session_state.rul_filter = "all"
 
-    # ── Component filter cards ────────────────────────────────────────────────
-    cards_html = '<div style="display:flex; gap:12px; margin-bottom:8px;">'
+    # ── Component filter — invisible buttons first, then cards pulled up ──────
+    st.markdown("""<style>
+    .rul-filter-row button { opacity:0 !important; height:88px !important; cursor:pointer !important; }
+    </style>""", unsafe_allow_html=True)
+    filter_cols = st.columns(5)
+    for i, key in enumerate(COMP_FILTER_KEYS):
+        with filter_cols[i]:
+            if st.button(COMP_FILTER_NAMES[key], key=f"rul_btn_{key}", use_container_width=True):
+                st.session_state.rul_filter = key
+                st.rerun()
+
+    cards_html = '<div style="display:flex; gap:12px; margin-top:-96px; margin-bottom:8px;">'
     for key in COMP_FILTER_KEYS:
         color = COMP_FILTER_COLOR[key]
         r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
@@ -1174,22 +1184,7 @@ elif page == "RUL Explorer":
     cards_html += '</div>'
     st.markdown(cards_html, unsafe_allow_html=True)
 
-    st.markdown("""<style>
-    div[data-testid="stHorizontalBlock"]:has(button[data-testid="baseButton-secondary"]) {
-        margin-top: -96px;
-    }
-    div[data-testid="stHorizontalBlock"]:has(button[data-testid="baseButton-secondary"]) button {
-        opacity: 0 !important;
-        height: 88px !important;
-        cursor: pointer !important;
-    }
-    </style>""", unsafe_allow_html=True)
-    filter_cols = st.columns(5)
-    for i, key in enumerate(COMP_FILTER_KEYS):
-        with filter_cols[i]:
-            if st.button(COMP_FILTER_NAMES[key], key=f"rul_btn_{key}", use_container_width=True):
-                st.session_state.rul_filter = key
-                st.rerun()
+
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
 
