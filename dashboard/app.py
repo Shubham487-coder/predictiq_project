@@ -1147,60 +1147,43 @@ elif page == "RUL Explorer":
     if "rul_filter" not in st.session_state:
         st.session_state.rul_filter = "all"
 
-    # Build icon HTML per key
-    def _filter_icon(key, color):
-        if key == "all":
-            return f'<span style="font-size:22px;">🔧</span>'
-        svg = COMP_SVG[key].replace("{c1}", color).replace("{c2}", color)
-        return svg
+    COMP_FILTER_EMOJI = {"all": "🔧", "comp1": "🌀", "comp2": "⚙️", "comp3": "🔥", "comp4": "💨"}
 
-    # Inject CSS — style every button in this section as an icon card
-    filter_css = ""
+    # One CSS block per button using data-testid
+    filter_css = "<style>"
     for key in COMP_FILTER_KEYS:
-        color  = COMP_FILTER_COLOR[key]
-        r, g, b = int(color[1:3],16), int(color[3:5],16), int(color[5:7],16)
+        color = COMP_FILTER_COLOR[key]
+        r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
         is_active = st.session_state.rul_filter == key
-        border_w  = "2px" if is_active else "1px"
-        border_op = "1.0" if is_active else "0.5"
-        bg_op     = "0.18" if is_active else "0.07"
-        glow      = f"0 0 18px rgba({r},{g},{b},0.6)" if is_active else f"0 0 10px rgba({r},{g},{b},0.3)"
+        glow   = f"0 0 18px rgba({r},{g},{b},0.65)" if is_active else f"0 0 10px rgba({r},{g},{b},0.28)"
+        border = f"2px solid rgba({r},{g},{b},1.0)" if is_active else f"1px solid rgba({r},{g},{b},0.45)"
+        bg     = f"rgba({r},{g},{b},0.18)" if is_active else f"rgba({r},{g},{b},0.07)"
+        txt    = "#ffffff" if is_active else f"rgba({r},{g},{b},0.85)"
+        fw     = "800" if is_active else "500"
         filter_css += f"""
-        div[data-testid="stButton"]:has(button[data-testid="baseButton-secondary"][key="rul_btn_{key}"]) button,
-        button[key="rul_btn_{key}"] {{
-            border: {border_w} solid rgba({r},{g},{b},{border_op}) !important;
-            background: rgba({r},{g},{b},{bg_op}) !important;
-            box-shadow: {glow} !important;
-            border-radius: 12px !important;
-            padding: 12px 6px !important;
-            height: auto !important;
-            color: {"#fff" if is_active else "#8ab"} !important;
-            font-weight: {"800" if is_active else "400"} !important;
-            font-size: 11px !important;
-            width: 100% !important;
-            transition: all 0.2s !important;
-        }}"""
-
-    st.markdown(f"<style>{filter_css}</style>", unsafe_allow_html=True)
+    [data-testid="stButton"] button[data-testid="baseButton-secondary"]:has(+ [data-testid="tooltipHoverTarget"] [title="{key}"]),
+    [data-testid="stButton"]:has(button p:contains('{COMP_FILTER_EMOJI[key]}')) button {{
+        border: {border} !important; background: {bg} !important;
+        box-shadow: {glow} !important; border-radius: 12px !important;
+        height: 80px !important; width: 100% !important;
+        font-size: 13px !important; font-weight: {fw} !important;
+        color: {txt} !important; white-space: pre-line !important;
+        line-height: 1.8 !important;
+    }}"""
+    filter_css += "</style>"
+    st.markdown(filter_css, unsafe_allow_html=True)
 
     btn_cols = st.columns(5)
     for i, key in enumerate(COMP_FILTER_KEYS):
-        color = COMP_FILTER_COLOR[key]
-        icon  = _filter_icon(key, color)
-        label = COMP_FILTER_NAMES[key]
+        emoji = COMP_FILTER_EMOJI[key]
+        label = f"{emoji}\n{COMP_FILTER_NAMES[key]}"
         with btn_cols[i]:
-            st.markdown(
-                f'<div style="text-align:center; pointer-events:none; margin-bottom:-38px; padding-top:10px;">'
-                f'{icon}<br>'
-                f'<span style="font-size:11px; color:{color}; font-weight:600;">{label}</span>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-            if st.button(" ", key=f"rul_btn_{key}", use_container_width=True):
+            if st.button(label, key=f"rul_btn_{key}", use_container_width=True):
                 st.session_state.rul_filter = key
                 st.rerun()
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
-            
+
 
     # ── Filter data ───────────────────────────────────────────────────────────
     rul_filtered = rul.copy()
