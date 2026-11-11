@@ -1147,11 +1147,7 @@ elif page == "RUL Explorer":
     if "rul_filter" not in st.session_state:
         st.session_state.rul_filter = "all"
 
-    # ── Component filter — SVG cards as links via query params ───────────────
-    if "rul_filter" in st.query_params:
-        st.session_state.rul_filter = st.query_params["rul_filter"]
-        del st.query_params["rul_filter"]
-
+    # ── Component filter ─────────────────────────────────────────────────────
     cards_html = '<div style="display:flex; gap:12px; margin-bottom:8px;">'
     for key in COMP_FILTER_KEYS:
         color = COMP_FILTER_COLOR[key]
@@ -1168,18 +1164,32 @@ elif page == "RUL Explorer":
             svg = COMP_SVG[key].replace("{c1}", color).replace("{c2}", color)
             icon_html = f'<div style="margin-bottom:6px;">{svg}</div>'
         cards_html += (
-            f'<a href="?rul_filter={key}" target="_self" style="flex:1; text-decoration:none;">'
-            f'<div style="border:{border}; background:{bg}; box-shadow:{glow}; '
+            f'<div style="flex:1; border:{border}; background:{bg}; box-shadow:{glow}; '
             f'border-radius:12px; height:88px; display:flex; flex-direction:column; '
-            f'align-items:center; justify-content:center; cursor:pointer;">'
+            f'align-items:center; justify-content:center;">'
             f'{icon_html}'
             f'<div style="font-size:11px; font-weight:{fw}; color:{label_color}; text-align:center;">'
-            f'{COMP_FILTER_NAMES[key]}</div></div></a>'
+            f'{COMP_FILTER_NAMES[key]}</div></div>'
         )
     cards_html += '</div>'
     st.markdown(cards_html, unsafe_allow_html=True)
 
-
+    st.markdown("""<style>
+    div[data-testid="stButton"] button {
+        opacity: 0 !important;
+        height: 88px !important;
+        margin-top: -92px !important;
+        cursor: pointer !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    </style>""", unsafe_allow_html=True)
+    filter_cols = st.columns(5)
+    for i, key in enumerate(COMP_FILTER_KEYS):
+        with filter_cols[i]:
+            if st.button(" ", key=f"rul_btn_{key}", use_container_width=True):
+                st.session_state.rul_filter = key
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
 
