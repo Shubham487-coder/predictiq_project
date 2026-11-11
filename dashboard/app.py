@@ -1254,7 +1254,9 @@ elif page == "RUL Explorer":
         color_discrete_map={k: RUL_COLOR[k] for k in RUL_ORDER},
         category_orders={"interpretation": RUL_ORDER},
         labels={"predicted_rul_hours": "Remaining Useful Life (hours)", "interpretation": "Status"},
+        barmode="overlay",
     )
+    fig.update_traces(opacity=0.9)
     for trace in fig.data:
         trace.name = RUL_LABEL.get(trace.name, trace.name)
 
@@ -1278,16 +1280,6 @@ elif page == "RUL Explorer":
     )
     st.plotly_chart(fig, use_container_width=True)
     # ── Machine RUL Table (fragment — only this reruns on page/range change) ──
-    info_box(
-        "How to read this table?",
-        f"""This table shows <b>all 100 machines</b> ranked worst to best — the machine with the least time remaining on any component appears first.<br><br>
-        Each cell shows the <b>Remaining Useful Life</b> for that component:<br>
-        <span style="color:{C_RED};">■ REPLACE</span> — under 24 hours — act immediately<br>
-        <span style="color:{C_AMBER};">■ INSPECT</span> — 24–48 hours — schedule within 2 days<br>
-        <span style="color:{C_CYAN};">■ MONITOR</span> — 48–72 hours — watch closely<br>
-        <span style="color:{C_GREEN};">■ OK</span> — over 72 hours — no action needed<br><br>
-        Use the <b>range slider</b> to focus on machines within a specific RUL window. The <b>component filter</b> above changes sort order."""
-    )
 
     @st.fragment
     def _rul_table(rul_df: pd.DataFrame, comp_filter_key: str):
@@ -1307,8 +1299,19 @@ elif page == "RUL Explorer":
 
         pivot["_worst"] = pivot[["comp1", "comp2", "comp3", "comp4"]].min(axis=1)
 
+        info_box(
+            "How to read this table?",
+            f"""This table shows <b>all 100 machines</b> ranked worst to best — the machine with the least time remaining on any component appears first.<br><br>
+            Each cell shows the <b>Remaining Useful Life</b> for that component:<br>
+            <span style="color:{C_RED};">■ REPLACE</span> — under 24 hours — act immediately<br>
+            <span style="color:{C_AMBER};">■ INSPECT</span> — 24–48 hours — schedule within 2 days<br>
+            <span style="color:{C_CYAN};">■ MONITOR</span> — 48–72 hours — watch closely<br>
+            <span style="color:{C_GREEN};">■ OK</span> — over 72 hours — no action needed<br><br>
+            <b>Range slider below:</b> drag the handles to show only machines whose worst component falls within that RUL window — e.g. 0–48h shows only machines that need action soon."""
+        )
+
         rng = st.slider(
-            "Filter by worst component RUL (hours)",
+            "Show machines with worst component RUL between:",
             min_value=0.0, max_value=102.0,
             value=(0.0, 102.0), step=1.0,
             format="%.0fh",
