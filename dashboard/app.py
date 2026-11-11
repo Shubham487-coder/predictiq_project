@@ -1151,7 +1151,7 @@ elif page == "RUL Explorer":
     st.markdown("""<style>
     div[data-testid="stButton"] button {
         opacity: 0 !important;
-        height: 88px !important;
+        height: 106px !important;
         cursor: pointer !important;
         margin-top: 0 !important;
         padding: 0 !important;
@@ -1164,7 +1164,7 @@ elif page == "RUL Explorer":
                 st.session_state.rul_filter = key
                 st.rerun()
 
-    cards_html = '<div style="display:flex; gap:12px; margin-top:-96px; margin-bottom:8px;">'
+    cards_html = '<div style="display:flex; gap:12px; margin-top:-106px; margin-bottom:8px;">'
     for key in COMP_FILTER_KEYS:
         color = COMP_FILTER_COLOR[key]
         r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
