@@ -1149,12 +1149,20 @@ elif page == "RUL Explorer":
 
     # ── Component filter — invisible buttons first, then cards pulled up ──────
     st.markdown("""<style>
-    div[data-testid="stButton"] button {
+    div[data-testid="stButton"]:has(button[data-testid="baseButton-secondary"]) button {
         opacity: 0 !important;
-        height: 106px !important;
-        cursor: pointer !important;
-        margin-top: 0 !important;
+        height: 90px !important;
+        width: 100% !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        margin: 0 !important;
         padding: 0 !important;
+        z-index: 10 !important;
+        cursor: pointer !important;
+    }
+    div[data-testid="stColumn"]:has(button[data-testid="baseButton-secondary"]) {
+        position: relative !important;
     }
     </style>""", unsafe_allow_html=True)
     filter_cols = st.columns(5)
@@ -1163,7 +1171,7 @@ elif page == "RUL Explorer":
             if st.button(COMP_FILTER_NAMES[key], key=f"rul_btn_{key}", use_container_width=True):
                 st.session_state.rul_filter = key
 
-    cards_html = '<div style="display:flex; gap:12px; margin-top:-98px; margin-bottom:8px;">'
+    cards_html = '<div style="display:flex; gap:12px; margin-top:-106px; margin-bottom:8px;">'
     for key in COMP_FILTER_KEYS:
         color = COMP_FILTER_COLOR[key]
         r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
