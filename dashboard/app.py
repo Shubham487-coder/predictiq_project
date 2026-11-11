@@ -1162,9 +1162,8 @@ elif page == "RUL Explorer":
         with filter_cols[i]:
             if st.button(COMP_FILTER_NAMES[key], key=f"rul_btn_{key}", use_container_width=True):
                 st.session_state.rul_filter = key
-                st.rerun()
 
-    cards_html = '<div style="display:flex; gap:12px; margin-top:-106px; margin-bottom:8px;">'
+    cards_html = '<div style="display:flex; gap:12px; margin-top:-98px; margin-bottom:8px;">'
     for key in COMP_FILTER_KEYS:
         color = COMP_FILTER_COLOR[key]
         r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
