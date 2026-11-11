@@ -1661,58 +1661,7 @@ elif page == "Maintenance":
                 st.success(f"✅  Maintenance job scheduled for M{int(selected_mid):03d} on {sched_date.strftime('%Y-%m-%d')}.")
             except Exception as _ex:
                 st.error(f"Failed to save: {_ex}")
-    # ── RUL health cards for selected machine ─────────────────────────────────
-    st.markdown('<div class="section-title">Component Health — Selected Machine</div>', unsafe_allow_html=True)
-
-    _RUL_COLOR = {"CRITICAL": C_RED, "URGENT": C_AMBER, "MONITOR": C_BLUE, "HEALTHY": C_GREEN}
-    _RUL_GLOW  = {
-        "CRITICAL": "rgba(255,59,78,0.40)",
-        "URGENT":   "rgba(255,192,32,0.35)",
-        "MONITOR":  "rgba(61,159,255,0.30)",
-        "HEALTHY":  "rgba(0,245,160,0.30)",
-    }
-    _RUL_LABEL = {"CRITICAL": "REPLACE NOW", "URGENT": "INSPECT SOON", "MONITOR": "MONITOR", "HEALTHY": "RUNNING OK"}
-    _SVG_C = {
-        "CRITICAL": ("#ff3b4e", "#7a0010"),
-        "URGENT":   ("#ffc020", "#7a5500"),
-        "MONITOR":  ("#3d9fff", "#0a3a6e"),
-        "HEALTHY":  ("#00f5a0", "#005c35"),
-    }
-
-    _mid_rul = rul[rul["machine_id"] == selected_mid]
-    card_cols = st.columns(4)
-    for _ci, _comp in enumerate(COMP_KEYS):
-        _comp_rul = _mid_rul[_mid_rul["component"] == _comp]
-        if len(_comp_rul) == 0:
-            continue
-        _row    = _comp_rul.iloc[0]
-        _interp = _row["interpretation"]
-        _hours  = _row["predicted_rul_hours"]
-        _clr    = _RUL_COLOR.get(_interp, C_INK)
-        _glow   = _RUL_GLOW.get(_interp, "rgba(255,255,255,0.1)")
-        _badge  = _RUL_LABEL.get(_interp, _interp)
-        _c1, _c2 = _SVG_C.get(_interp, ("#aaa", "#333"))
-        _svg = COMP_SVG[_comp].replace("{c1}", _c1).replace("{c2}", _c2)
-        with card_cols[_ci]:
-            st.markdown(f"""
-            <div style="background:linear-gradient(160deg,rgba(10,28,18,0.97),rgba(4,14,8,0.98));
-                        border:1px solid {_clr};border-radius:10px;padding:14px 10px 12px;
-                        box-shadow:0 0 18px {_glow},inset 0 1px 0 rgba(255,255,255,0.04);
-                        text-align:center;">
-                <div style="margin-bottom:6px;">{_svg}</div>
-                <div style="font-size:11px;font-weight:900;color:{C_MUTED};
-                            text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">
-                    {COMP_LABEL[_comp]}</div>
-                <div style="font-size:26px;font-weight:900;color:{_clr};
-                            text-shadow:0 0 16px {_glow};line-height:1.1;">{_hours:.0f}h</div>
-                <div style="margin-top:8px;">
-                    <span style="background:rgba(0,0,0,0.35);border:1px solid {_clr};
-                                 border-radius:999px;padding:2px 9px;font-size:10px;
-                                 font-weight:800;color:{_clr};letter-spacing:0.07em;">{_badge}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
+    
     # ── Maintenance log ───────────────────────────────────────────────────────
     st.markdown('<div class="section-title">Maintenance Log</div>', unsafe_allow_html=True)
 
