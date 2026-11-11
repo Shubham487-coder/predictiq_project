@@ -772,6 +772,15 @@ def render_sidebar():
     if st.button("🔄 Refresh"):
         load_latest_run.clear()
         st.rerun()
+    _, _, run_at_sidebar = load_latest_run()
+    if run_at_sidebar:
+        st.markdown(
+            f'<div style="font-size:11px; color:{C_MUTED}; margin-top:10px;">'
+            f'📊 Showing data for:<br>'
+            f'<span style="color:{C_INK}; font-weight:700;">'
+            f'{run_at_sidebar.strftime("%Y-%m-%d %H:%M UTC")}</span></div>',
+            unsafe_allow_html=True
+        )
 
 with st.sidebar:
     st.session_state.page = st.radio(
