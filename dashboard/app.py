@@ -503,8 +503,8 @@ COMP_KEYS = ["comp1", "comp2", "comp3", "comp4"]
 
 # ── Plain-English status descriptions ─────────────────────────────────────────
 STATUS_DESC = {
-    "CRITICAL": "Failure likely within 48 hours — immediate action required",
-    "WARNING":  "Degradation detected — schedule inspection within 3 days",
+    "CRITICAL": "Failure probability ≥ 70% — immediate action required",
+    "WARNING":  "Failure probability ≥ 50% — schedule inspection soon",
     "HEALTHY":  "Operating normally — no action needed",
 }
 
@@ -1036,10 +1036,8 @@ if page == "Overview":
     info_box(
         "What does this panel show?",
         f"""This panel lists only the machines that need attention right now — healthy machines are not shown.<br><br>
-        🔴 <b style="color:{C_RED};">CRITICAL</b> — A component on this machine is predicted to fail very soon.
-        Act immediately — do not wait for the next scheduled inspection.<br><br>
-        🟡 <b style="color:{C_AMBER};">WARNING</b> — Early signs of degradation detected. Schedule an inspection
-        within 3 days to prevent escalation to CRITICAL.<br><br>
+        🔴 <b style="color:{C_RED};">CRITICAL</b> — Failure probability ≥ 70% on one or more components. Act immediately — do not wait for the next scheduled inspection.<br><br>
+        🟡 <b style="color:{C_AMBER};">WARNING</b> — Failure probability ≥ 50% on one or more components. Schedule an inspection soon to prevent escalation to CRITICAL.
         The <b>Flagging Components</b> column shows which specific components need attention on each machine.
         Use the action buttons to schedule maintenance or set an alert."""
     )
