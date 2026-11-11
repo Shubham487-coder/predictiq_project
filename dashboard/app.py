@@ -1176,21 +1176,28 @@ elif page == "RUL Explorer":
 
     st.markdown("""<style>
     div[data-testid="stHorizontalBlock"]:last-of-type {
-        margin-top: -92px !important;
+        margin-top: -30px !important;
+        gap: 12px !important;
     }
     div[data-testid="stHorizontalBlock"]:last-of-type button {
-        opacity: 0 !important;
-        height: 88px !important;
+        height: 28px !important;
         cursor: pointer !important;
         background: transparent !important;
-        border: none !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+        border-radius: 20px !important;
         box-shadow: none !important;
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        color: rgba(255,255,255,0.7) !important;
+        padding: 0 !important;
+        text-shadow: none !important;
+        letter-spacing: 0 !important;
     }
     </style>""", unsafe_allow_html=True)
     filter_cols = st.columns(5)
     for i, key in enumerate(COMP_FILTER_KEYS):
         with filter_cols[i]:
-            if st.button(" ", key=f"rul_btn_{key}", use_container_width=True):
+            if st.button(COMP_FILTER_NAMES[key], key=f"rul_btn_{key}", use_container_width=True):
                 st.session_state.rul_filter = key
 
     st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
