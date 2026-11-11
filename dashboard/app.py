@@ -1278,15 +1278,25 @@ elif page == "RUL Explorer":
     )
     st.plotly_chart(fig, use_container_width=True)
     # ── Machine RUL Table (fragment — only this reruns on page/range change) ──
+    info_box(
+        "How to read this table?",
+        f"""This table shows <b>all 100 machines</b> ranked worst to best — the machine with the least time remaining on any component appears first.<br><br>
+        Each cell shows the <b>Remaining Useful Life</b> for that component:<br>
+        <span style="color:{C_RED};">■ REPLACE</span> — under 24 hours — act immediately<br>
+        <span style="color:{C_AMBER};">■ INSPECT</span> — 24–48 hours — schedule within 2 days<br>
+        <span style="color:{C_CYAN};">■ MONITOR</span> — 48–72 hours — watch closely<br>
+        <span style="color:{C_GREEN};">■ OK</span> — over 72 hours — no action needed<br><br>
+        Use the <b>range slider</b> to focus on machines within a specific RUL window. The <b>component filter</b> above changes sort order."""
+    )
+
     @st.fragment
     def _rul_table(rul_df: pd.DataFrame, comp_filter_key: str):
         COMP_HDR_COLOR = {"comp1": "#2f8cff", "comp2": "#ff6b35", "comp3": "#c97aff", "comp4": "#17d88b"}
         COMP_HDR_LABEL = {"comp1": "Fan", "comp2": "Core Engine", "comp3": "HP Turbine", "comp4": "LP Turbine"}
 
         st.markdown(f'<div class="section-title" style="margin-top:28px;">Fleet RUL — All Machines</div>', unsafe_allow_html=True)
-        st.markdown(f'<div style="font-size:12px; color:{C_MUTED}; margin-bottom:14px;">Sorted worst to best · worst component across all 4 determines row order</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:13px; color:{C_INK}; margin-bottom:14px;">Sorted worst to best · worst component across all 4 determines row order</div>', unsafe_allow_html=True)
 
-        # Pivot 400 rows → 100 machine rows
         pivot = rul_df.pivot_table(
             index="machine_id", columns="component",
             values="predicted_rul_hours", aggfunc="first"
@@ -1297,7 +1307,6 @@ elif page == "RUL Explorer":
 
         pivot["_worst"] = pivot[["comp1", "comp2", "comp3", "comp4"]].min(axis=1)
 
-        # Range slider
         rng = st.slider(
             "Filter by worst component RUL (hours)",
             min_value=0.0, max_value=102.0,
@@ -1307,14 +1316,12 @@ elif page == "RUL Explorer":
         )
         pivot = pivot[(pivot["_worst"] >= rng[0]) & (pivot["_worst"] <= rng[1])]
 
-        # Sort
         if comp_filter_key != "all":
             pivot = pivot.sort_values(comp_filter_key, na_position="last").reset_index(drop=True)
         else:
             pivot = pivot.sort_values("_worst", na_position="last").reset_index(drop=True)
         pivot = pivot.drop(columns="_worst")
 
-        # Pagination
         PAGE_SIZE = 10
         total_machines = len(pivot)
         total_pages = max(1, (total_machines + PAGE_SIZE - 1) // PAGE_SIZE)
@@ -1329,42 +1336,45 @@ elif page == "RUL Explorer":
                 return '<span style="color:rgba(255,255,255,0.2);">—</span>'
             h = round(float(val), 1)
             if h <= 24:
-                clr, bg, label = C_RED,   "rgba(255,59,78,0.18)",  "REPLACE"
+                clr, bg, label = C_RED,   "rgba(255,59,78,0.22)",  "REPLACE"
             elif h <= 48:
-                clr, bg, label = C_AMBER, "rgba(255,192,32,0.15)", "INSPECT"
+                clr, bg, label = C_AMBER, "rgba(255,192,32,0.18)", "INSPECT"
             elif h <= 72:
-                clr, bg, label = C_CYAN,  "rgba(23,216,139,0.12)", "MONITOR"
+                clr, bg, label = C_CYAN,  "rgba(23,216,139,0.14)", "MONITOR"
             else:
-                clr, bg, label = C_GREEN, "rgba(23,216,139,0.08)", "OK"
+                clr, bg, label = C_GREEN, "rgba(23,216,139,0.10)", "OK"
             return (
-                f'<div style="display:inline-flex; flex-direction:column; align-items:center; gap:2px;">'
-                f'<span style="font-size:14px; font-weight:800; color:{clr};">{h}h</span>'
-                f'<span style="font-size:9px; font-weight:700; color:{clr}; background:{bg}; '
-                f'border-radius:4px; padding:1px 5px; letter-spacing:0.06em;">{label}</span>'
+                f'<div style="display:inline-flex; flex-direction:column; align-items:center; gap:3px;">'
+                f'<span style="font-size:17px; font-weight:800; color:{clr};">{h}h</span>'
+                f'<span style="font-size:10px; font-weight:700; color:{clr}; background:{bg}; '
+                f'border-radius:4px; padding:2px 7px; letter-spacing:0.06em;">{label}</span>'
                 f'</div>'
             )
 
         def _hdr_icon(key, color):
             svg = COMP_SVG[key].replace("{c1}", color).replace("{c2}", color)
-            svg = svg.replace('width="36"', 'width="22"').replace('height="36"', 'height="22"')
+            svg = svg.replace('width="36"', 'width="24"').replace('height="36"', 'height="24"')
             return svg
 
+        hdr_bg = "rgba(255,255,255,0.03)"
+        hdr_border = "1px solid rgba(255,255,255,0.07)"
         hdr_cells = (
-            f'<th style="padding:10px 14px; text-align:left; color:{C_MUTED}; font-size:11px; '
+            f'<th style="padding:14px 18px; text-align:left; color:{C_MUTED}; font-size:11px; '
             f'font-weight:800; text-transform:uppercase; letter-spacing:0.1em; '
-            f'background:{C_PANEL}; border-bottom:1px solid {C_LINE};">Machine</th>'
+            f'background:{hdr_bg}; border-bottom:{hdr_border};">Machine</th>'
         )
         for ck in ["comp1", "comp2", "comp3", "comp4"]:
             clr = COMP_HDR_COLOR[ck]
             icon = _hdr_icon(ck, clr)
             hdr_cells += (
-                f'<th style="padding:10px 14px; text-align:center; background:{C_PANEL}; border-bottom:1px solid {C_LINE};">'
-                f'<div style="display:flex; flex-direction:column; align-items:center; gap:4px;">'
+                f'<th style="padding:14px 18px; text-align:center; background:{hdr_bg}; border-bottom:{hdr_border};">'
+                f'<div style="display:flex; flex-direction:column; align-items:center; gap:6px;">'
                 f'{icon}'
-                f'<span style="font-size:10px; font-weight:800; color:{clr}; text-transform:uppercase; letter-spacing:0.08em;">{COMP_HDR_LABEL[ck]}</span>'
+                f'<span style="font-size:11px; font-weight:800; color:{clr}; text-transform:uppercase; letter-spacing:0.08em;">{COMP_HDR_LABEL[ck]}</span>'
                 f'</div></th>'
             )
 
+        row_border = "1px solid rgba(255,255,255,0.05)"
         rows_html = ""
         for _, row in page_df.iterrows():
             machine_label = f"M{int(row['machine_id']):03d}"
@@ -1372,24 +1382,28 @@ elif page == "RUL Explorer":
             valid_vals = [v for v in vals if v is not None and not (isinstance(v, float) and pd.isna(v))]
             worst = min(valid_vals) if valid_vals else 999
             if worst <= 24:
-                row_bg, row_left = "rgba(255,59,78,0.07)",   f"3px solid {C_RED}"
+                row_bg, row_left = "rgba(255,59,78,0.07)",  f"3px solid {C_RED}"
             elif worst <= 48:
-                row_bg, row_left = "rgba(255,192,32,0.06)",  f"3px solid {C_AMBER}"
+                row_bg, row_left = "rgba(255,192,32,0.06)", f"3px solid {C_AMBER}"
             else:
-                row_bg, row_left = "transparent",            "3px solid transparent"
+                row_bg, row_left = "transparent",           "3px solid transparent"
             rows_html += (
                 f'<tr style="background:{row_bg}; border-left:{row_left};">'
-                f'<td style="padding:10px 14px; font-weight:800; font-size:14px; color:#fff; border-bottom:1px solid {C_LINE};">{machine_label}</td>'
-                f'<td style="padding:10px 14px; text-align:center; border-bottom:1px solid {C_LINE};">{_badge(row.get("comp1"))}</td>'
-                f'<td style="padding:10px 14px; text-align:center; border-bottom:1px solid {C_LINE};">{_badge(row.get("comp2"))}</td>'
-                f'<td style="padding:10px 14px; text-align:center; border-bottom:1px solid {C_LINE};">{_badge(row.get("comp3"))}</td>'
-                f'<td style="padding:10px 14px; text-align:center; border-bottom:1px solid {C_LINE};">{_badge(row.get("comp4"))}</td>'
+                f'<td style="padding:14px 18px; font-weight:900; font-size:16px; color:#fff; border-bottom:{row_border}; letter-spacing:0.03em;">{machine_label}</td>'
+                f'<td style="padding:14px 18px; text-align:center; border-bottom:{row_border};">{_badge(row.get("comp1"))}</td>'
+                f'<td style="padding:14px 18px; text-align:center; border-bottom:{row_border};">{_badge(row.get("comp2"))}</td>'
+                f'<td style="padding:14px 18px; text-align:center; border-bottom:{row_border};">{_badge(row.get("comp3"))}</td>'
+                f'<td style="padding:14px 18px; text-align:center; border-bottom:{row_border};">{_badge(row.get("comp4"))}</td>'
                 f'</tr>'
             )
 
         st.markdown(f"""
-        <div style="border:1px solid {C_LINE}; border-radius:10px; overflow:hidden;
-                    background:{C_PANEL}; box-shadow:0 8px 40px rgba(0,0,0,0.5); margin-bottom:14px;">
+        <div style="border:1px solid rgba(47,140,255,0.18);
+                    border-top:1px solid rgba(255,255,255,0.07);
+                    border-radius:12px; overflow:hidden;
+                    background:linear-gradient(160deg, rgba(13,21,40,0.97), rgba(5,9,18,0.98));
+                    box-shadow:0 0 40px rgba(47,140,255,0.08), 0 16px 48px rgba(0,0,0,0.6);
+                    margin-bottom:14px;">
           <table style="width:100%; border-collapse:collapse; font-family:inherit;">
             <thead><tr>{hdr_cells}</tr></thead>
             <tbody>{rows_html}</tbody>
@@ -1403,7 +1417,7 @@ elif page == "RUL Explorer":
                 st.session_state.rul_table_page -= 1
         with pc2:
             st.markdown(
-                f'<div style="text-align:center; color:{C_MUTED}; font-size:12px; padding-top:8px;">'
+                f'<div style="text-align:center; color:{C_INK}; font-size:13px; padding-top:8px;">'
                 f'Page {st.session_state.rul_table_page + 1} of {total_pages}'
                 f' &nbsp;·&nbsp; {total_machines} machines in range</div>',
                 unsafe_allow_html=True
