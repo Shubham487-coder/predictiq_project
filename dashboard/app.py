@@ -1175,10 +1175,12 @@ elif page == "RUL Explorer":
     st.markdown(cards_html, unsafe_allow_html=True)
 
     st.markdown("""<style>
-    div[data-testid="stButton"] button {
+    div[data-testid="stHorizontalBlock"]:last-of-type {
+        margin-top: -92px !important;
+    }
+    div[data-testid="stHorizontalBlock"]:last-of-type button {
         opacity: 0 !important;
         height: 88px !important;
-        margin-top: -92px !important;
         cursor: pointer !important;
         background: transparent !important;
         border: none !important;
