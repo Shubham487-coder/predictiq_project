@@ -1168,7 +1168,7 @@ elif page == "RUL Explorer":
             svg = COMP_SVG[key].replace("{c1}", color).replace("{c2}", color)
             icon_html = f'<div style="margin-bottom:6px;">{svg}</div>'
         cards_html += (
-            f'<a href="?rul_filter={key}" style="flex:1; text-decoration:none;">'
+            f'<a href="?rul_filter={key}" target="_self" style="flex:1; text-decoration:none;">'
             f'<div style="border:{border}; background:{bg}; box-shadow:{glow}; '
             f'border-radius:12px; height:88px; display:flex; flex-direction:column; '
             f'align-items:center; justify-content:center; cursor:pointer;">'
