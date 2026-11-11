@@ -785,7 +785,7 @@ def render_sidebar():
 with st.sidebar:
     st.session_state.page = st.radio(
         "nav",
-        ["Overview", "RUL Explorer", "Alerts"],
+        ["Overview", "RUL Explorer", "Maintenance"],
         label_visibility="collapsed",
     )
     render_sidebar()
@@ -1432,154 +1432,170 @@ elif page == "RUL Explorer":
     _rul_table(rul, st.session_state.rul_filter)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE 3 — ALERTS
+# PAGE 3 — MAINTENANCE SCHEDULER
 # ═══════════════════════════════════════════════════════════════════════════════
 
-elif page == "Alerts":
+elif page == "Maintenance":
+    # ── Ensure table exists ───────────────────────────────────────────────────
+    try:
+        _conn = psycopg2.connect(**DB_CONFIG)
+        _cur  = _conn.cursor()
+        _cur.execute("""
+            CREATE TABLE IF NOT EXISTS maintenance_schedule (
+                id               BIGSERIAL PRIMARY KEY,
+                machine_id       INTEGER       NOT NULL,
+                scheduled_date   DATE          NOT NULL,
+                notes            TEXT,
+                status           VARCHAR(20)   NOT NULL DEFAULT 'SCHEDULED',
+                created_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+                pipeline_run_at  TIMESTAMPTZ
+            )
+        """)
+        _conn.commit()
+        _cur.close()
+        _conn.close()
+    except Exception as _e:
+        st.error(f"DB init error: {_e}")
+
+    # ── Page header ───────────────────────────────────────────────────────────
     st.markdown(f"""
     <h1 style="margin:0 0 4px; font-size:25px; color:#fff;
-               text-shadow:0 0 22px rgba(47,140,255,0.28);">Alerts</h1>
-    <p style="margin:0 0 8px; color:{C_MUTED}; font-size:13px;">
-        Engines with components that have crossed failure thresholds — prioritised by urgency
+               text-shadow:0 0 22px rgba(47,140,255,0.28);">Maintenance Scheduler</h1>
+    <p style="margin:0 0 8px; color:{C_INK}; font-size:13px;">
+        Schedule maintenance jobs for machines flagged by the ML models — log the action, set a date, and track it
     </p>
     """, unsafe_allow_html=True)
 
     info_box(
-        "What is this page and how do I use it?",
-        f"""This page is your <b>action list</b> — it shows only the machines and components that have crossed failure thresholds and need real-world intervention.<br><br>
-        <b>When is an alert raised?</b><br>
-        An alert is automatically triggered when the ML model's failure probability for a component exceeds <b>50%</b>. This threshold was chosen to balance sensitivity (catching failures early) with specificity (not raising too many false alarms).<br><br>
-        <b>How is the list sorted?</b><br>
-        Alerts are sorted by <b>Repair Priority first</b> (1 = most urgent), then by <b>Remaining Life</b> (shortest first). This means the top row is always the single most urgent component in your entire fleet.<br><br>
-        <b>What action should I take?</b><br>
-        1️⃣ Start at the top of the table — that's your highest priority<br>
-        2️⃣ Check the <b>Remaining Life (hours)</b> column to understand your deadline<br>
-        3️⃣ Use the <b>Machine Detail</b> page (sidebar) to drill deeper into that specific machine<br>
-        4️⃣ Schedule maintenance or replacement for that component before the RUL runs out<br><br>
-        <b>Filters:</b> Use the filters below to focus on specific machine statuses or component types. By default, only CRITICAL and WARNING machines are shown."""
+        "How does the Maintenance Scheduler work?",
+        f"""Use this page to <b>log a maintenance action</b> for any machine in the fleet — particularly ones flagged as CRITICAL or WARNING by the ML models.<br><br>
+        <b>How to schedule:</b><br>
+        1️⃣ Select a machine from the dropdown — CRITICAL and WARNING machines are listed first<br>
+        2️⃣ Pick a maintenance date<br>
+        3️⃣ Add a note describing the work to be done<br>
+        4️⃣ Click <b>Schedule Maintenance</b> — the entry is saved permanently to the database<br><br>
+        <b>Log below the form</b> shows all previously scheduled entries, newest first. Each entry records which pipeline run's data triggered the action, so you can always trace back to the ML prediction that led to this decision."""
     )
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown(f"""
-        <div class="metric-card" style="border-color:rgba(255,77,94,0.40); box-shadow:var(--glow-red);">
-            <div class="metric-label">🔴 Critical Engines</div>
-            <div class="metric-value metric-critical">{n_critical}</div>
-            <div style="font-size:11px; color:{C_MUTED}; margin-top:8px;">{STATUS_DESC["CRITICAL"]}</div>
-        </div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown(f"""
-        <div class="metric-card" style="border-color:rgba(255,176,32,0.35);">
-            <div class="metric-label">🟡 Warning Engines</div>
-            <div class="metric-value metric-warning">{n_warning}</div>
-            <div style="font-size:11px; color:{C_MUTED}; margin-top:8px;">{STATUS_DESC["WARNING"]}</div>
-        </div>""", unsafe_allow_html=True)
-
-    st.markdown('<div class="section-title">Filter Alerts</div>', unsafe_allow_html=True)
-    cf1, cf2 = st.columns(2)
-    with cf1:
-        status_filter = st.multiselect(
-            "Engine Status", ["CRITICAL","WARNING","HEALTHY"],
-            default=["CRITICAL","WARNING"],
-            help="Filter by the overall engine status"
+    # ── Build machine dropdown — CRITICAL first, then WARNING, then HEALTHY ──
+    priority_order = {"CRITICAL": 0, "WARNING": 1, "HEALTHY": 2}
+    machine_opts = (
+        clf_rich[["machine_id", "overall_status"]]
+        .drop_duplicates()
+        .sort_values(
+            by=["overall_status", "machine_id"],
+            key=lambda s: s.map(priority_order) if s.name == "overall_status" else s
         )
-    with cf2:
-        comp_display_filter = st.multiselect(
-            "Component", list(COMP_NAMES.values()),
-            default=list(COMP_NAMES.values()),
-            help="Filter by which component triggered the alert"
+    )
+
+    def _machine_label(row):
+        badge = {"CRITICAL": "🔴", "WARNING": "🟡", "HEALTHY": "🟢"}.get(row["overall_status"], "⚪")
+        return f"{badge}  M{int(row['machine_id']):03d}  —  {row['overall_status']}"
+
+    machine_labels = [_machine_label(r) for _, r in machine_opts.iterrows()]
+    machine_ids    = machine_opts["machine_id"].tolist()
+
+    # ── Scheduler form ────────────────────────────────────────────────────────
+    st.markdown('<div class="section-title">Schedule a Maintenance Job</div>', unsafe_allow_html=True)
+
+    with st.form("maintenance_form", clear_on_submit=True):
+        fc1, fc2 = st.columns([1, 1])
+        with fc1:
+            selected_label = st.selectbox(
+                "Select Machine", machine_labels,
+                help="CRITICAL and WARNING machines listed first"
+            )
+            selected_mid = machine_ids[machine_labels.index(selected_label)]
+        with fc2:
+            sched_date = st.date_input(
+                "Scheduled Maintenance Date",
+                value=None,
+                help="Date when maintenance is planned"
+            )
+
+        notes_text = st.text_area(
+            "Maintenance Notes",
+            placeholder="Describe the maintenance action — e.g. 'Replace comp1 bearing. Assigned to Team B. Estimated 4h downtime.'",
+            height=100,
         )
-    # Map display names back to keys
-    comp_filter = [k for k, v in COMP_NAMES.items() if v in comp_display_filter]
 
-    # Build alerts
-    alert_rows = []
-    for _, row in clf_rich_sorted.iterrows():
-        if row["overall_status"] not in status_filter:
-            continue
-        for comp in COMP_KEYS:
-            if comp not in comp_filter or not row[f"{comp}_alert"]:
-                continue
-            cr = rul[(rul["machine_id"]==row["machine_id"]) & (rul["component"]==comp)]
-            rul_h  = cr["predicted_rul_hours"].values[0] if len(cr) else None
-            interp = cr["interpretation"].values[0] if len(cr) else "—"
-            alert_rows.append({
-                "Machine":           f"M{int(row['machine_id']):03d}",
-                "Engine Status":     row["overall_status"],
-                "Component":         COMP_NAMES[comp],
-                "Failure Probability": f"{row[f'{comp}_prob']*100:.1f}%",
-                "Component Status":  row[f"{comp}_status"],
-                "Remaining Life (h)": round(rul_h,1) if rul_h is not None else "—",
-                "Outlook":           interp,
-                "Repair Priority":   int(row["priority"]),
-            })
+        submitted = st.form_submit_button("⚙️  Schedule Maintenance", use_container_width=True)
 
-    if not alert_rows:
+    if submitted:
+        if not sched_date:
+            st.warning("Please pick a scheduled date before submitting.")
+        else:
+            try:
+                _conn2 = psycopg2.connect(**DB_CONFIG)
+                _cur2  = _conn2.cursor()
+                _cur2.execute(
+                    """INSERT INTO maintenance_schedule
+                       (machine_id, scheduled_date, notes, pipeline_run_at)
+                       VALUES (%s, %s, %s, %s)""",
+                    (
+                        int(selected_mid),
+                        sched_date,
+                        notes_text.strip() if notes_text.strip() else None,
+                        run_at,
+                    )
+                )
+                _conn2.commit()
+                _cur2.close()
+                _conn2.close()
+                st.success(f"✅  Maintenance job scheduled for M{int(selected_mid):03d} on {sched_date.strftime('%Y-%m-%d')}.")
+            except Exception as _ex:
+                st.error(f"Failed to save: {_ex}")
+
+    # ── Maintenance log ───────────────────────────────────────────────────────
+    st.markdown('<div class="section-title">Maintenance Log</div>', unsafe_allow_html=True)
+
+    try:
+        _conn3 = psycopg2.connect(**DB_CONFIG)
+        log_df = pd.read_sql(
+            """SELECT
+                   machine_id,
+                   TO_CHAR(scheduled_date, 'YYYY-MM-DD')                        AS "Scheduled Date",
+                   status                                                        AS "Status",
+                   notes                                                         AS "Notes",
+                   TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI') AS "Logged At (UTC)",
+                   TO_CHAR(pipeline_run_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI') AS "Based on Run"
+               FROM maintenance_schedule
+               ORDER BY created_at DESC
+               LIMIT 100""",
+            _conn3
+        )
+        _conn3.close()
+    except Exception as _ex:
+        log_df = pd.DataFrame()
+        st.error(f"Could not load log: {_ex}")
+
+    if log_df.empty:
         st.markdown(f"""
-        <div style="text-align:center; padding:40px; color:{C_GREEN};
-                    font-size:16px; font-weight:700;">
-            ✓ No alerts for the selected filters
-        </div>
-        """, unsafe_allow_html=True)
+        <div style="text-align:center; padding:40px; color:{C_INK}; font-size:14px;">
+            No maintenance jobs scheduled yet. Use the form above to log your first one.
+        </div>""", unsafe_allow_html=True)
     else:
-        alerts_df = pd.DataFrame(alert_rows).sort_values(["Repair Priority","Remaining Life (h)"])
+        log_df.insert(0, "Machine", log_df["machine_id"].apply(lambda x: f"M{int(x):03d}"))
+        log_df = log_df.drop(columns=["machine_id"])
 
-        STATUS_BG2 = {"CRITICAL":"rgba(255,59,78,0.14)","WARNING":"rgba(255,192,32,0.12)","HEALTHY":"rgba(0,245,160,0.10)"}
-        def _alert_fns(col):
-            if col in ("Engine Status","Component Status"):
-                return lambda v: (f"background:{STATUS_BG2.get(v,'')};color:{STATUS_COLOR.get(v,C_INK)};font-weight:800;")
-            if col == "Remaining Life (h)":
-                return lambda v: (f"color:{C_RED};font-weight:700;" if isinstance(v,(int,float)) and v<48
-                                  else f"color:{C_AMBER};font-weight:700;" if isinstance(v,(int,float)) and v<72
-                                  else f"color:{C_INK};")
-            if col == "Failure Probability":
-                return lambda v: f"color:{C_RED};font-weight:700;"
+        STATUS_LOG_COLOR = {
+            "SCHEDULED":   C_AMBER,
+            "IN PROGRESS": C_BLUE,
+            "DONE":        C_GREEN,
+        }
+
+        def _log_style(col):
+            if col == "Machine":
+                return lambda v: f"color:{C_BLUE}; font-weight:700;"
+            if col == "Status":
+                return lambda v: f"color:{STATUS_LOG_COLOR.get(v, C_INK)}; font-weight:700;"
+            if col == "Scheduled Date":
+                return lambda v: f"color:{C_INK}; font-weight:600;"
             return None
-        dark_table(alerts_df, {c: _alert_fns(c) for c in alerts_df.columns if _alert_fns(c)})
-        st.markdown(f'<div style="font-size:11px; color:{C_MUTED}; margin-top:6px;">'
-                    f'{len(alert_rows)} alert(s) across {len(set(r["Machine"] for r in alert_rows))} engine(s)</div>',
-                    unsafe_allow_html=True)
 
-    # Risk scatter
-    st.markdown('<div class="section-title">Fleet Risk Map — All Engines</div>', unsafe_allow_html=True)
-    info_box(
-        "How do I read this scatter plot?",
-        f"""This chart plots <b>every machine in the fleet</b> as a single dot, giving you a bird's-eye view of overall fleet risk in one glance.<br><br>
-        <b>What each axis means:</b><br>
-        ↔ <b>Horizontal axis (X) — Shortest Remaining Life (hours)</b>: How many hours the most degraded component on this machine has left. Machines on the <b>left</b> are running out of time.<br>
-        ↕ <b>Vertical axis (Y) — Highest Failure Probability (%)</b>: The worst failure probability across all 4 components on this machine. Machines at the <b>top</b> have a high chance of imminent failure.<br><br>
-        <b>The four quadrants:</b><br>
-        🔴 <b>Top-left</b> — High failure probability AND low remaining life: <b>most urgent, act immediately</b><br>
-        🟡 <b>Top-right</b> — High failure probability but more time remaining: <b>plan maintenance soon</b><br>
-        🟡 <b>Bottom-left</b> — Low remaining life but lower failure probability: <b>watch closely</b><br>
-        🟢 <b>Bottom-right</b> — Low failure probability AND plenty of life remaining: <b>safe zone</b><br><br>
-        <b>Dot colours:</b> 🔴 CRITICAL &nbsp;|&nbsp; 🟡 WARNING &nbsp;|&nbsp; 🟢 HEALTHY<br><br>
-        <b>How to use this:</b> Hover over any dot to see the machine ID and priority. Any dot in the top-left quadrant (above the 50% line and left of the 72h line) should already appear in the alert table above."""
-    )
-    sdf = clf_rich.copy()
-    sdf["max_prob"] = sdf[["comp1_prob","comp2_prob","comp3_prob","comp4_prob"]].max(axis=1)*100
-
-    fig_sc = px.scatter(
-        sdf, x="min_rul_hours", y="max_prob",
-        color="overall_status",
-        color_discrete_map=STATUS_COLOR,
-        hover_data={"machine_id":True,"priority":True},
-        labels={
-            "min_rul_hours": "Shortest Remaining Life (hours)",
-            "max_prob": "Highest Failure Probability (%)",
-            "overall_status": "Status"
-        },
-    )
-    fig_sc.update_traces(marker=dict(size=9, opacity=0.88, line=dict(width=0.5, color=C_BG)))
-    fig_sc.update_layout(
-        **PLOTLY_THEME, height=380,
-        margin=dict(l=20,r=20,t=20,b=20),
-        legend=dict(font_color=C_MUTED, bgcolor="rgba(0,0,0,0)"),
-        xaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED),
-        yaxis=dict(gridcolor=C_LINE, tickfont_color=C_MUTED),
-    )
-    fig_sc.add_vline(x=72, line_dash="dot", line_color=C_MUTED, opacity=0.45,
-                     annotation_text="72h threshold", annotation_font_color=C_MUTED)
-    fig_sc.add_hline(y=50, line_dash="dot", line_color=C_MUTED, opacity=0.45,
-                     annotation_text="50% alert threshold", annotation_font_color=C_MUTED)
-    st.plotly_chart(fig_sc, use_container_width=True)
+        dark_table(log_df, {c: _log_style(c) for c in log_df.columns if _log_style(c)})
+        st.markdown(
+            f'<div style="font-size:11px; color:{C_INK}; margin-top:6px;">'
+            f'{len(log_df)} maintenance job(s) on record</div>',
+            unsafe_allow_html=True
+        )
