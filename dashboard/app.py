@@ -1149,7 +1149,13 @@ elif page == "RUL Explorer":
 
     # ── Component filter — invisible buttons first, then cards pulled up ──────
     st.markdown("""<style>
-    .rul-filter-row button { opacity:0 !important; height:88px !important; cursor:pointer !important; }
+    div[data-testid="stButton"] button {
+        opacity: 0 !important;
+        height: 88px !important;
+        cursor: pointer !important;
+        margin-top: 0 !important;
+        padding: 0 !important;
+    }
     </style>""", unsafe_allow_html=True)
     filter_cols = st.columns(5)
     for i, key in enumerate(COMP_FILTER_KEYS):
