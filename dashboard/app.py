@@ -76,13 +76,13 @@ st.markdown("""
 <style>
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
-  --bg:           #03050a;
-  --panel:        #090e1a;
-  --panel-strong: #0d1526;
-  --ink:          #f0f8ff;
-  --muted:        #7ea4c8;
-  --line:         #1e3254;
-  --soft-line:    #142240;
+  --bg:           #040e08;
+  --panel:        #071a10;
+  --panel-strong: #0a2016;
+  --ink:          #e8f5ee;
+  --muted:        #6ea888;
+  --line:         #1a3d28;
+  --soft-line:    #112b1c;
   --green:        #00f5a0;
   --blue:         #3d9fff;
   --red:          #ff3b4e;
@@ -105,20 +105,20 @@ footer { display: none; }
 [data-testid="stAppViewContainer"],
 [data-testid="stAppViewContainer"] > .main {
     background:
-        radial-gradient(circle at 18% 10%, rgba(0,245,160,0.13), transparent 28%),
-        radial-gradient(circle at 88% 4%,  rgba(61,159,255,0.18), transparent 30%),
-        radial-gradient(circle at 50% 90%, rgba(0,229,255,0.07), transparent 35%),
-        linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px),
-        #03050a;
+        radial-gradient(circle at 18% 10%, rgba(0,245,160,0.18), transparent 28%),
+        radial-gradient(circle at 88% 4%,  rgba(0,245,160,0.10), transparent 30%),
+        radial-gradient(circle at 50% 90%, rgba(0,245,160,0.08), transparent 35%),
+        linear-gradient(rgba(0,245,160,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,160,0.04) 1px, transparent 1px),
+        #040e08;
     background-size: auto, auto, auto, 34px 34px, 34px 34px, auto;
     color: var(--ink);
 }
 
 /* ── Sidebar ────────────────────────────────────────────────────────────── */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, rgba(10,17,30,0.99), rgba(3,5,10,0.99));
-    border-right: 1px solid #1e3254;
+    background: linear-gradient(180deg, rgba(8,22,14,0.99), rgba(4,14,8,0.99));
+    border-right: 1px solid #1a3d28;
     box-shadow: inset -1px 0 0 rgba(61,159,255,0.25);
 }
 [data-testid="stSidebar"] * { color: var(--ink) !important; }
@@ -477,9 +477,9 @@ C_AMBER  = "#ffc020"
 C_CYAN   = "#00e5ff"
 C_MUTED  = "#7ea4c8"
 C_INK    = "#f0f8ff"
-C_LINE   = "#1e3254"
-C_BG     = "#03050a"
-C_PANEL  = "#090e1a"
+C_LINE   = "#1a3d28"
+C_BG     = "#040e08"
+C_PANEL  = "#071a10"
 
 STATUS_COLOR = {
     "CRITICAL": C_RED,
@@ -1495,8 +1495,63 @@ elif page == "Maintenance":
     machine_labels = [_machine_label(r) for _, r in machine_opts.iterrows()]
     machine_ids    = machine_opts["machine_id"].tolist()
 
+    # ── Dark widget CSS ───────────────────────────────────────────────────────
+    st.markdown(f"""
+    <style>
+    /* form card */
+    [data-testid="stForm"] {{
+        background: linear-gradient(160deg, rgba(10,28,18,0.97), rgba(4,14,8,0.98)) !important;
+        border: 1px solid {C_LINE} !important;
+        border-radius: 10px !important;
+        padding: 18px 20px !important;
+    }}
+    /* selectbox, date input, text area */
+    [data-testid="stSelectbox"] > div > div,
+    [data-testid="stDateInput"] > div > div > input,
+    [data-testid="stTextArea"] textarea {{
+        background: rgba(4,14,8,0.95) !important;
+        border: 1px solid {C_LINE} !important;
+        color: {C_INK} !important;
+        border-radius: 6px !important;
+    }}
+    [data-testid="stSelectbox"] svg {{ fill: {C_INK} !important; }}
+    /* dropdown option list */
+    [data-baseweb="popover"] [role="option"],
+    [data-baseweb="menu"] li {{
+        background: #071a10 !important;
+        color: {C_INK} !important;
+    }}
+    [data-baseweb="popover"] [role="option"]:hover,
+    [data-baseweb="menu"] li:hover {{
+        background: #0a2016 !important;
+    }}
+    /* labels */
+    [data-testid="stForm"] label,
+    [data-testid="stForm"] p {{
+        color: {C_INK} !important;
+        font-size: 13px !important;
+    }}
+    /* submit button */
+    [data-testid="stForm"] [data-testid="stFormSubmitButton"] button {{
+        background: linear-gradient(90deg, #005c30, #008040) !important;
+        color: #fff !important;
+        border: 1px solid #00a050 !important;
+        font-weight: 700 !important;
+        border-radius: 6px !important;
+    }}
+    [data-testid="stForm"] [data-testid="stFormSubmitButton"] button:hover {{
+        background: linear-gradient(90deg, #007a40, #00a050) !important;
+        box-shadow: 0 0 18px rgba(0,245,160,0.3) !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
     # ── Scheduler form ────────────────────────────────────────────────────────
     st.markdown('<div class="section-title">Schedule a Maintenance Job</div>', unsafe_allow_html=True)
+
+    from datetime import date as _date
+    _DATE_MIN = _date(2015, 1, 1)
+    _DATE_MAX = _date(2015, 12, 31)
 
     with st.form("maintenance_form", clear_on_submit=True):
         fc1, fc2 = st.columns([1, 1])
@@ -1509,8 +1564,10 @@ elif page == "Maintenance":
         with fc2:
             sched_date = st.date_input(
                 "Scheduled Maintenance Date",
-                value=None,
-                help="Date when maintenance is planned"
+                value=_DATE_MIN,
+                min_value=_DATE_MIN,
+                max_value=_DATE_MAX,
+                help="Pick a date within the data range: 2015-01-01 to 2015-12-31"
             )
 
         notes_text = st.text_area(
