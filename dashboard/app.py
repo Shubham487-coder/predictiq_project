@@ -1167,31 +1167,33 @@ elif page == "RUL Explorer":
             f'<div style="flex:1; border:{border}; background:{bg}; box-shadow:{glow}; '
             f'border-radius:12px; height:88px; display:flex; flex-direction:column; '
             f'align-items:center; justify-content:center;">'
-            f'{icon_html}'
-            f'<div style="font-size:11px; font-weight:{fw}; color:{label_color}; text-align:center;">'
-            f'{COMP_FILTER_NAMES[key]}</div></div>'
+            f'{icon_html}</div>'
         )
     cards_html += '</div>'
     st.markdown(cards_html, unsafe_allow_html=True)
 
     st.markdown("""<style>
     div[data-testid="stHorizontalBlock"]:last-of-type {
-        margin-top: -30px !important;
+        margin-top: -8px !important;
         gap: 12px !important;
     }
-    div[data-testid="stHorizontalBlock"]:last-of-type button {
+    div[data-testid="stHorizontalBlock"]:last-of-type div[data-testid="stButton"] button,
+    div[data-testid="stHorizontalBlock"]:last-of-type .stButton > button,
+    div[data-testid="stHorizontalBlock"]:last-of-type .stButton > button:hover {
         height: 28px !important;
         cursor: pointer !important;
         background: transparent !important;
-        border: 1px solid rgba(255,255,255,0.15) !important;
+        background-image: none !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 20px !important;
         box-shadow: none !important;
         font-size: 10px !important;
         font-weight: 600 !important;
         color: rgba(255,255,255,0.7) !important;
-        padding: 0 !important;
+        padding: 0 8px !important;
         text-shadow: none !important;
         letter-spacing: 0 !important;
+        transform: none !important;
     }
     </style>""", unsafe_allow_html=True)
     filter_cols = st.columns(5)
