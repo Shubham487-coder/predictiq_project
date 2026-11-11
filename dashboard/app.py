@@ -792,14 +792,15 @@ with st.sidebar:
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 clf, rul, run_at = load_latest_run()
-# ── Ensemble: upgrade classifier status using RUL results ─────────────────────
-# If RUL says a component is critical/urgent but classifier missed it, upgrade.
+## ── Ensemble: RUL takes final authority on status ─────────────────────────────
 if not clf.empty and not rul.empty:
     rul_min = rul.groupby("machine_id")["predicted_rul_hours"].min().reset_index()
     rul_min.columns = ["machine_id", "min_rul_hours"]
     clf = clf.merge(rul_min, on="machine_id", how="left")
-    upgrade_critical = (clf["min_rul_hours"] <= 24) & (clf["overall_status"] == "HEALTHY")
-    upgrade_warning  = (clf["min_rul_hours"] <= 48) & (clf["overall_status"] == "HEALTHY")
+    # Any machine with a component ≤ 24h → CRITICAL regardless of classifier
+    upgrade_critical = clf["min_rul_hours"] <= 24
+    # Any machine with a component ≤ 48h that isn't already CRITICAL → WARNING
+    upgrade_warning  = (clf["min_rul_hours"] <= 48) & (~upgrade_critical)
     clf.loc[upgrade_critical, "overall_status"] = "CRITICAL"
     clf.loc[upgrade_critical, "priority"]       = 1
     clf.loc[upgrade_warning,  "overall_status"] = "WARNING"
