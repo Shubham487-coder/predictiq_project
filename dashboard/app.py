@@ -1546,29 +1546,28 @@ elif page == "Maintenance":
     </style>
     """, unsafe_allow_html=True)
 
-    # ── Scheduler form ────────────────────────────────────────────────────────
+    # ── Machine selector (outside form — cards update on change) ─────────────
     st.markdown('<div class="section-title">Schedule a Maintenance Job</div>', unsafe_allow_html=True)
+
+    selected_label = st.selectbox(
+        "Select Machine", machine_labels,
+        help="CRITICAL and WARNING machines listed first",
+        key="maint_machine_select"
+    )
+    selected_mid = machine_ids[machine_labels.index(selected_label)]
 
     from datetime import date as _date
     _DATE_MIN = _date(2015, 1, 1)
     _DATE_MAX = _date(2015, 12, 31)
 
     with st.form("maintenance_form", clear_on_submit=True):
-        fc1, fc2 = st.columns([1, 1])
-        with fc1:
-            selected_label = st.selectbox(
-                "Select Machine", machine_labels,
-                help="CRITICAL and WARNING machines listed first"
-            )
-            selected_mid = machine_ids[machine_labels.index(selected_label)]
-        with fc2:
-            sched_date = st.date_input(
-                "Scheduled Maintenance Date",
-                value=_DATE_MIN,
-                min_value=_DATE_MIN,
-                max_value=_DATE_MAX,
-                help="Pick a date within the data range: 2015-01-01 to 2015-12-31"
-            )
+        sched_date = st.date_input(
+            "Scheduled Maintenance Date",
+            value=_DATE_MIN,
+            min_value=_DATE_MIN,
+            max_value=_DATE_MAX,
+            help="Pick a date within the data range: 2015-01-01 to 2015-12-31"
+        )
         notes_text = st.text_area(
             "Maintenance Notes",
             placeholder="Describe the maintenance action — e.g. 'Replace comp1 bearing. Assigned to Team B. Estimated 4h downtime.'",
@@ -1602,100 +1601,67 @@ elif page == "Maintenance":
 
     _RUL_COLOR = {"CRITICAL": C_RED, "URGENT": C_AMBER, "MONITOR": C_BLUE, "HEALTHY": C_GREEN}
     _RUL_GLOW  = {
-        "CRITICAL": "rgba(255,59,78,0.45)",
-        "URGENT":   "rgba(255,192,32,0.40)",
-        "MONITOR":  "rgba(61,159,255,0.35)",
-        "HEALTHY":  "rgba(0,245,160,0.35)",
+        "CRITICAL": "rgba(255,59,78,0.40)",
+        "URGENT":   "rgba(255,192,32,0.35)",
+        "MONITOR":  "rgba(61,159,255,0.30)",
+        "HEALTHY":  "rgba(0,245,160,0.30)",
     }
     _RUL_LABEL = {"CRITICAL": "REPLACE NOW", "URGENT": "INSPECT SOON", "MONITOR": "MONITOR", "HEALTHY": "RUNNING OK"}
-    _SVG_C = {"CRITICAL": ("#ff3b4e","#7a0010"), "URGENT": ("#ffc020","#7a5500"),
-               "MONITOR": ("#3d9fff","#0a3a6e"), "HEALTHY": ("#00f5a0","#005c35")}
+    _SVG_C = {
+        "CRITICAL": ("#ff3b4e", "#7a0010"),
+        "URGENT":   ("#ffc020", "#7a5500"),
+        "MONITOR":  ("#3d9fff", "#0a3a6e"),
+        "HEALTHY":  ("#00f5a0", "#005c35"),
+    }
 
     _mid_rul = rul[rul["machine_id"] == selected_mid]
-    _mid_clf_row = clf_rich[clf_rich["machine_id"] == selected_mid].iloc[0] if len(clf_rich[clf_rich["machine_id"] == selected_mid]) else None
-
     card_cols = st.columns(4)
     for _ci, _comp in enumerate(COMP_KEYS):
         _comp_rul = _mid_rul[_mid_rul["component"] == _comp]
         if len(_comp_rul) == 0:
             continue
-        _row = _comp_rul.iloc[0]
+        _row    = _comp_rul.iloc[0]
         _interp = _row["interpretation"]
         _hours  = _row["predicted_rul_hours"]
-        _label  = _row["day_label"]
         _clr    = _RUL_COLOR.get(_interp, C_INK)
         _glow   = _RUL_GLOW.get(_interp, "rgba(255,255,255,0.1)")
         _badge  = _RUL_LABEL.get(_interp, _interp)
-        _c1, _c2 = _SVG_C.get(_interp, ("#aaa","#333"))
+        _c1, _c2 = _SVG_C.get(_interp, ("#aaa", "#333"))
         _svg = COMP_SVG[_comp].replace("{c1}", _c1).replace("{c2}", _c2)
-        _prob = _mid_clf_row[f"{_comp}_prob"] * 100 if _mid_clf_row is not None else None
-        _prob_html = f'<div style="font-size:11px;color:{C_MUTED};margin-top:6px;">Fail prob: <span style="color:{_clr};font-weight:700;">{_prob:.1f}%</span></div>' if _prob is not None else ""
-
         with card_cols[_ci]:
             st.markdown(f"""
-            <div style="
-                background: linear-gradient(160deg, rgba(10,28,18,0.97), rgba(4,14,8,0.98));
-                border: 1px solid {_clr};
-                border-radius: 12px;
-                padding: 18px 14px 14px;
-                box-shadow: 0 0 24px {_glow}, inset 0 1px 0 rgba(255,255,255,0.05);
-                text-align: center;
-                margin-bottom: 10px;
-            ">
-                <div style="margin-bottom:10px;">{_svg}</div>
-                <div style="font-size:12px;font-weight:900;color:{C_MUTED};
-                            text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">
-                    {COMP_LABEL[_comp]}
+            <div style="background:linear-gradient(160deg,rgba(10,28,18,0.97),rgba(4,14,8,0.98));
+                        border:1px solid {_clr};border-radius:10px;padding:14px 10px 12px;
+                        box-shadow:0 0 18px {_glow},inset 0 1px 0 rgba(255,255,255,0.04);
+                        text-align:center;">
+                <div style="margin-bottom:6px;">{_svg}</div>
+                <div style="font-size:11px;font-weight:900;color:{C_MUTED};
+                            text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">
+                    {COMP_LABEL[_comp]}</div>
+                <div style="font-size:26px;font-weight:900;color:{_clr};
+                            text-shadow:0 0 16px {_glow};line-height:1.1;">{_hours:.0f}h</div>
+                <div style="margin-top:8px;">
+                    <span style="background:rgba(0,0,0,0.35);border:1px solid {_clr};
+                                 border-radius:999px;padding:2px 9px;font-size:10px;
+                                 font-weight:800;color:{_clr};letter-spacing:0.07em;">{_badge}</span>
                 </div>
-                <div style="font-size:28px;font-weight:900;color:{_clr};
-                            text-shadow:0 0 20px {_glow};line-height:1.1;">
-                    {_hours:.0f}h
-                </div>
-                <div style="font-size:11px;color:{C_MUTED};margin-top:2px;">{_label}</div>
-                <div style="margin-top:10px;">
-                    <span style="
-                        background:rgba(0,0,0,0.35);
-                        border:1px solid {_clr};
-                        border-radius:999px;
-                        padding:3px 10px;
-                        font-size:10px;
-                        font-weight:800;
-                        color:{_clr};
-                        letter-spacing:0.08em;
-                    ">{_badge}</span>
-                </div>
-                {_prob_html}
             </div>
             """, unsafe_allow_html=True)
 
-    # ── Maintenance log with delete ───────────────────────────────────────────
+    # ── Maintenance log ───────────────────────────────────────────────────────
     st.markdown('<div class="section-title">Maintenance Log</div>', unsafe_allow_html=True)
-
-    # Handle delete action before loading log
-    _del_id = st.session_state.pop("_delete_log_id", None)
-    if _del_id:
-        try:
-            _cdel = psycopg2.connect(**DB_CONFIG)
-            _cdel.cursor().execute("DELETE FROM maintenance_schedule WHERE id = %s", (_del_id,))
-            _cdel.commit(); _cdel.close()
-            st.success("Entry deleted.")
-        except Exception as _dex:
-            st.error(f"Delete failed: {_dex}")
 
     try:
         _conn3 = psycopg2.connect(**DB_CONFIG)
         log_df = pd.read_sql(
-            """SELECT
-                   id,
-                   machine_id,
+            """SELECT id, machine_id,
                    TO_CHAR(scheduled_date, 'YYYY-MM-DD')                        AS "Scheduled Date",
                    status                                                        AS "Status",
                    notes                                                         AS "Notes",
                    TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI') AS "Logged At (UTC)",
                    TO_CHAR(pipeline_run_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI') AS "Based on Run"
                FROM maintenance_schedule
-               ORDER BY created_at DESC
-               LIMIT 100""",
+               ORDER BY created_at DESC LIMIT 100""",
             _conn3
         )
         _conn3.close()
@@ -1705,7 +1671,7 @@ elif page == "Maintenance":
 
     if log_df.empty:
         st.markdown(f"""
-        <div style="text-align:center; padding:40px; color:{C_INK}; font-size:14px;">
+        <div style="text-align:center;padding:36px;color:{C_INK};font-size:14px;">
             No maintenance jobs scheduled yet. Use the form above to log your first one.
         </div>""", unsafe_allow_html=True)
     else:
@@ -1713,35 +1679,35 @@ elif page == "Maintenance":
         for _, _lr in log_df.iterrows():
             _sc = STATUS_LOG_COLOR.get(_lr["Status"], C_INK)
             _mid_label = f"M{int(_lr['machine_id']):03d}"
-            st.markdown(f"""
-            <div style="
-                background: linear-gradient(160deg, rgba(10,28,18,0.95), rgba(4,14,8,0.97));
-                border: 1px solid {C_LINE};
-                border-radius: 8px;
-                padding: 12px 16px;
-                margin-bottom: 8px;
-                display: flex;
-                align-items: center;
-                gap: 16px;
-            ">
-                <div style="min-width:52px;font-size:14px;font-weight:900;color:{C_BLUE};">{_mid_label}</div>
-                <div style="min-width:88px;font-size:13px;font-weight:700;color:{C_INK};">{_lr['Scheduled Date']}</div>
-                <div style="min-width:100px;">
-                    <span style="background:rgba(0,0,0,0.35);border:1px solid {_sc};border-radius:999px;
-                                 padding:2px 10px;font-size:10px;font-weight:800;color:{_sc};letter-spacing:0.07em;">
-                        {_lr['Status']}
-                    </span>
-                </div>
-                <div style="flex:1;font-size:12px;color:{C_MUTED};">{_lr['Notes'] or '—'}</div>
-                <div style="font-size:11px;color:{C_MUTED};white-space:nowrap;">{_lr['Logged At (UTC)']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            if st.button("🗑 Delete", key=f"del_{_lr['id']}"):
-                st.session_state["_delete_log_id"] = int(_lr["id"])
-                st.rerun()
+            _col_row, _col_del = st.columns([20, 1])
+            with _col_row:
+                dark_table(pd.DataFrame([{
+                    "Machine":        _mid_label,
+                    "Scheduled Date": _lr["Scheduled Date"],
+                    "Status":         _lr["Status"],
+                    "Notes":          _lr["Notes"] or "—",
+                    "Logged At (UTC)":_lr["Logged At (UTC)"],
+                    "Based on Run":   _lr["Based on Run"],
+                }]), {
+                    "Machine":        lambda v: f"color:{C_BLUE};font-weight:700;",
+                    "Status":         lambda v: f"color:{STATUS_LOG_COLOR.get(v, C_INK)};font-weight:700;",
+                    "Scheduled Date": lambda v: f"color:{C_INK};font-weight:600;",
+                })
+            with _col_del:
+                if st.button("🗑", key=f"del_{_lr['id']}", help="Delete this entry"):
+                    try:
+                        _cdel = psycopg2.connect(**DB_CONFIG)
+                        _cdel.cursor().execute(
+                            "DELETE FROM maintenance_schedule WHERE id = %s", (int(_lr["id"]),)
+                        )
+                        _cdel.commit()
+                        _cdel.close()
+                        st.rerun()
+                    except Exception as _dex:
+                        st.error(f"Delete failed: {_dex}")
 
         st.markdown(
-            f'<div style="font-size:11px; color:{C_MUTED}; margin-top:6px;">'
+            f'<div style="font-size:11px;color:{C_MUTED};margin-top:6px;">'
             f'{len(log_df)} maintenance job(s) on record</div>',
             unsafe_allow_html=True
         )
